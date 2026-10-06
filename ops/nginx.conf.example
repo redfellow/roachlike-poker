@@ -1,0 +1,27 @@
+# Merge this server block into the EXISTING Windows Nginx configuration.
+# Replace certificate paths and verify them before reloading Nginx.
+server {
+	listen 443 ssl;
+	server_name torakkapokeri.redlan.co;
+
+	ssl_certificate C:/nginx/certs/torakkapokeri/fullchain.pem;
+	ssl_certificate_key C:/nginx/certs/torakkapokeri/privkey.pem;
+
+	location / {
+		proxy_pass http://127.0.0.1:3001;
+		proxy_http_version 1.1;
+		proxy_set_header Host $host;
+		proxy_set_header X-Forwarded-Proto $scheme;
+		proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	}
+
+	location /socket.io/ {
+		proxy_pass http://127.0.0.1:3001;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection "upgrade";
+		proxy_set_header Host $host;
+		proxy_read_timeout 75s;
+		proxy_send_timeout 75s;
+	}
+}
