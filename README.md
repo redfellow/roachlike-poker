@@ -1,4 +1,4 @@
-# Torakkapokeri
+# roachlike
 
 A Finnish, private-room bluffing card game for 2–6 friends. The MVP uses an external video call. Built-in audio/video is a later phase.
 

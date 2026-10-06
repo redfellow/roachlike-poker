@@ -8,7 +8,7 @@ Here is the agreed base-game rule set for **Torakkapokeri** (*Cockroach Poker* /
 
 * **Deck Composition:** 64 total cards.
 * **Card Types (8 Suits / Critters):**
-1. Cockroach (Torakka)
+1. Orc (Örkki)
 2. Bat (Lepakko)
 3. Fly (Kärpänen)
 4. Toad/Frog (Sammakko)
