@@ -1,0 +1,53 @@
+{
+	"name": "roachlike",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=24"
+	},
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "concurrently -k -n server,web \"npm run dev -w @torakka/server\" \"npm run dev -w @torakka/web\"",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:e2e": "playwright test",
+		"typecheck": "tsc --noEmit",
+		"lint": "eslint .",
+		"check": "npm run typecheck && npm run lint && npm test",
+		"build": "npm run build -w @torakka/web",
+		"start": "npm run start -w @torakka/server",
+		"backup": "tsx ops/backup.ts"
+	},
+	"dependencies": {
+		"@fastify/static": "^10.1.5",
+		"better-sqlite3": "^13.0.3",
+		"fastify": "^5.12.5",
+		"react": "^19.3.0",
+		"react-dom": "^19.3.0",
+		"socket.io": "^4.8.4",
+		"socket.io-client": "^4.8.4",
+		"zod": "^4.6.5"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.63.0",
+		"@stylistic/eslint-plugin": "^5.10.0",
+		"@types/better-sqlite3": "^9.6.0",
+		"@types/node": "^26.6.4",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@vitejs/plugin-react": "^6.1.2",
+		"concurrently": "^10.0.5",
+		"eslint": "^10.12.0",
+		"globals": "^17.13.0",
+		"tsx": "^4.23.15",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.71.1",
+		"vite": "^8.3.3",
+		"vitest": "^5.0.3"
+	}
+}
