@@ -71,6 +71,8 @@ small { color: var(--muted); }
 .hero-card--back .creature { opacity: .8; }
 .stamp { position: absolute; bottom: 28px; right: 0; width: 140px; height: 140px; display: grid; place-content: center; text-align: center; border: 2px dashed var(--accent); border-radius: 50%; transform: rotate(-15deg); color: var(--accent); font: 700 18px "Barlow Condensed", sans-serif; }
 .landing__footer { padding: 25px 4.5%; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 20px; color: var(--muted); font-size: 10px; letter-spacing: 1px; }
+.landing__footer a { color: var(--lime); text-decoration: none; }
+.landing__footer a:hover { text-decoration: underline; }
 .join-form { margin-top: 28px; max-width: 540px; }
 .join-form label { font-size: 12px; display: block; margin-bottom: 10px; }
 .join-form__row { display: flex; gap: 8px; }
