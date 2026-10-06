@@ -1,6 +1,10 @@
 # roachlike
 
-A Finnish, private-room bluffing card game for 2–6 friends. The MVP uses an external video call. Built-in audio/video is a later phase.
+A private-room bluffing card game for 2–6 friends, with a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
+
+## Credits
+
+"Cockroach Poker" was designed by Jacques Zeimet and published by Drei Magier Spiele in 2004. See the [Wikipedia article](https://en.wikipedia.org/wiki/Cockroach_Poker).
 
 ## Local development
 
