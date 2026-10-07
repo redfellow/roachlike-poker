@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useRef, useState, type ReactElement } from "reac
 import { createRoot } from "react-dom/client";
 import { io, type Socket } from "socket.io-client";
 import { CREATURES, LABELS, type Creature, type GameView, type Recap, type Resolution, type Score } from "@torakka/game";
-import type { Reply, RoomAction, RoomView } from "@torakka/protocol";
+import type { OpenRoomView, Reply, RoomAction, RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
 import { playNormalizedAudio, selectNextAudio } from "./audio";
 import { FI } from "./strings.fi";
@@ -82,6 +82,20 @@ function App(): ReactElement {
 	const [error, setError] = useState("");
 	const [rules, setRules] = useState(false);
 	const [creating, setCreating] = useState(false);
+	const [openRooms, setOpenRooms] = useState<OpenRoomView[]>([]);
+	useEffect(function () {
+		if (roomId) { return; }
+		let active = true;
+		async function refresh(): Promise<void> {
+			try {
+				const response = await fetch("/api/rooms/open");
+				if (response.ok && active) { setOpenRooms(await response.json() as OpenRoomView[]); }
+			}
+			catch { return; }
+		}
+		void refresh(); const timer = setInterval(() => void refresh(), 5000);
+		return function () { active = false; clearInterval(timer); };
+	}, [roomId]);
 	async function createRoom(): Promise<void> {
 		setCreating(true); setError("");
 		try {
@@ -96,7 +110,7 @@ function App(): ReactElement {
 	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} />; }
 	return <div className="landing"><header className="topbar"><Logo /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></header>
 		<main className="landing__main"><div className="landing__copy"><p className="eyebrow">{FI.landing.eyebrow}</p><h1>{FI.landing.headingFirst}<br /><em>{FI.landing.headingEmphasis}</em><br />{FI.landing.headingLast}</h1><p className="lede">{FI.landing.lede}</p>
-			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoined(true); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{stored("torakka:room") && <a className="button button--quiet" href={`/r/${stored("torakka:room")}`}>{FI.landing.resumeRoom}</a>}<p className="fineprint">{FI.landing.privacyNote}</p></div>}
+			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoined(true); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{stored("torakka:room") && <a className="button button--quiet" href={`/r/${stored("torakka:room")}`}>{FI.landing.resumeRoom}</a>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <a href={`/r/${room.id}`} className="open-room" key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span>{FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></a>)}</div></section>}</>}
 			{error && <p role="alert" className="error">{error}</p>}
 		</div><div className="landing__art" aria-hidden="true"><div className="hero-card hero-card--back"><span>{FI.landing.backCard}</span><CreatureArt creature="hamahakki" /></div><div className="hero-card"><span className="eyebrow">{FI.landing.frontCard}</span><CreatureArt creature="torakka" /><strong>{FI.brand.first}</strong><span className="hero-card__serial">{FI.landing.cardSerial}</span></div><span className="stamp">{FI.landing.stampFirst}<br />{FI.landing.stampSecond}</span></div></main>
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules /></Modal>}</div>;
@@ -199,21 +213,21 @@ function Session({ roomId, name }: { roomId: string; name: string }): ReactEleme
 	const game = state.game;
 	return <div className={`app${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo /><nav className="topbar__tools"><label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button><button className="button button--quiet" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { if (confirm(FI.session.confirmEnd)) { void command({ kind: "end" }); } }}>{FI.session.stopGame}</button>}</nav></header>
 		{focusMode && game && game.phase !== "ended" && <button className="button button--compact focus-restore" onClick={() => setFocusMode(false)}>{FI.session.exitFocusMode}</button>}
-		<div className="room-strip"><span><i className={`dot${connected ? "" : " dot--offline"}`} /> {connected ? FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="text-button">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></div>
+		<div className="room-strip"><span><i className={`dot${connected ? "" : " dot--offline"}`} /> {connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="text-button">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></div>
 		{error && <div role="alert" className="error error--banner">{error}<button aria-label={FI.common.close} onClick={() => setError("")}>✕</button></div>}
 		{!connected && <div className="error error--banner">{FI.session.connectionLost}</div>}
 		{state.vote && <div className="vote"><strong>{FI.session.requestSeat(state.members.find(m => m.id === state.vote!.requesterId)?.name ?? "")}</strong><span>{FI.session.approvals(state.vote.approvals.length, Math.floor(state.vote.voters.length / 2) + 1)}</span>{state.vote.voters.includes(state.me) && <><button className="button" disabled={busy} onClick={() => command({ kind: "vote", approve: true })}>{FI.session.approve}</button><button className="button button--quiet" disabled={busy} onClick={() => command({ kind: "vote", approve: false })}>{FI.session.reject}</button></>}</div>}
 		{state.waitingSeatId && <div className="vote"><strong>{FI.session.replacementNeeded}</strong><span>{FI.session.waitingReplacement}</span>{host && <button className="button" onClick={function () { if (confirm(FI.session.confirmEnd)) { void command({ kind: "end" }); } }}>{FI.session.endGame}</button>}</div>}
 		{!game ? <main className="lobby"><section><p className="eyebrow">{FI.lobby.eyebrow}</p><h1>{FI.lobby.heading}</h1><p className="lede">{FI.lobby.lede}</p><div className="lobby__players">{state.members.filter(m => m.seated).map(m => <div className={`lobby-player${m.ready ? " lobby-player--ready" : ""}`} key={m.id}><Avatar name={m.name} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}{m.computer ? ` (${FI.lobby.computer})` : ""}</strong><small>{m.computer ? (m.ready ? FI.lobby.readyState : FI.lobby.notReadyState) : (!m.online ? FI.lobby.offline : m.ready ? FI.lobby.readyState : FI.lobby.notReadyState)}</small></span><span>{m.ready ? "✓" : "…"}</span>{host && m.computer && <button type="button" className="lobby-player__remove" aria-label={FI.lobby.removeComputer(m.name)} disabled={busy || !connected} onClick={function () { if (confirm(FI.lobby.removeComputerConfirm(m.name))) { void command({ kind: "remove", seatId: m.id }); } }}>✕</button>}</div>)}</div>
 			<div className="lobby__actions">
-				{host && <button className="button button--quiet button--compact" disabled={state.members.filter(m => m.seated).length >= 6 || busy || !connected} onClick={() => void command({ kind: "add-computer" })}>{FI.lobby.addComputer}</button>}
 				{me.seated ? <button className="button button--primary button--large" disabled={busy || !connected} onClick={() => command({ kind: "ready", ready: !me.ready })}>{me.ready ? FI.lobby.readyButton : FI.lobby.notReadyButton}</button> : <button className="button button--primary" disabled={state.members.filter(m => m.seated).length >= 6 || busy} onClick={() => command({ kind: "sit" })}>{FI.lobby.sit}</button>}
 				{me.seated && <button className="button button--quiet button--compact" onClick={() => command({ kind: "stand" })}>{FI.lobby.stand}</button>}
+				{host && <button className="button button--quiet button--compact" disabled={state.members.filter(m => m.seated).length >= 6 || busy || !connected} onClick={() => void command({ kind: "add-computer" })}>{FI.lobby.addComputer}</button>}
 			</div>
 			{!game && <button className="text-button text-button--danger" disabled={busy || !connected} onClick={function () { if (confirm(FI.lobby.leaveConfirm)) { void command({ kind: "leave-table" }); } }}>{FI.lobby.leaveTable}</button>}
 			{state.countdownAt !== null && <div className="countdown" role="status"><strong>{Math.max(1, Math.ceil((state.countdownAt - time) / 1000))}</strong><span>{FI.lobby.countdown}</span></div>}
 			<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar name={m.name} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
-		</section><aside className="lobby__aside"><div className="mini-card"><CreatureArt creature="lude" /><p>{FI.lobby.quote}</p></div><h3>{FI.common.settings}</h3><label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}
+		</section><aside className="lobby__aside"><div className="mini-card"><CreatureArt creature="lude" /><p>{FI.lobby.quote}</p></div><h3>{FI.common.settings}</h3>{host && <label className="check"><input type="checkbox" checked={state.open} disabled={busy || !connected} onChange={event => void command({ kind: "set-open", open: event.target.checked })} /> {FI.lobby.openRoom}</label>}<label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{host ? FI.lobby.openRoomNote : FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}
 		<footer className="app__footer"><span aria-live="polite">{state.notice}</span>{host && !state.game && !state.closed && <button className="button button--danger" disabled={busy || !connected} onClick={function () { if (confirm(FI.lobby.closeConfirm)) { void command({ kind: "close-lobby" }); } }}>{FI.lobby.closeLobby}</button>}<span>{FI.footer}</span></footer>
 		{rules && <Modal close={() => setRules(false)}><Rules /><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label></Modal>}
 		{history && <Modal close={() => setHistory(false)}><History items={state.history} /></Modal>}
@@ -223,6 +237,8 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const game = state.game!;
 	const me = game.seats.find(s => s.personId === state.me && !s.removed);
 	const claim = game.challenge?.claims.at(-1);
+	const claimSender = game.seats.find(seat => seat.id === claim?.senderId)?.name ?? "";
+	const claimReceiver = game.seats.find(seat => seat.id === claim?.receiverId)?.name ?? "";
 	const required = game.phase === "initiation" ? game.activeSeatId : claim?.receiverId;
 	const [hint, setHint] = useState(guided);
 	const [result, setResult] = useState(false);
@@ -231,7 +247,9 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const [selectedTarget, setSelectedTarget] = useState("");
 	const [handoff, setHandoff] = useState<{ from: string; to: string } | null>(null);
 	const [peeking, setPeeking] = useState(false);
-	const [nextTurnSeat, setNextTurnSeat] = useState<string | null>(null);
+	const [nextTurnSeat, setNextTurnSeat] = useState<string | null>(game.phase === "initiation" ? game.activeSeatId : null);
+	const [routePaths, setRoutePaths] = useState<{ d: string; labelX: number; labelY: number }[]>([]);
+	const tableRef = useRef<HTMLElement | null>(null);
 	const seen = useRef(game.lastResolution?.id);
 	const challengeSoundIndex = useRef(0);
 	const previous = useRef({
@@ -249,6 +267,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const latestClaim = game.challenge?.claims.at(-1);
 		const isNewHandoff = Boolean(latestClaim && (old.challengeId !== game.challenge?.id || old.claimCount < (game.challenge?.claims.length ?? 0)));
 		if (isNewHandoff && latestClaim) {
+			setNextTurnSeat(null);
 			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
 			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
@@ -262,12 +281,61 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		}
 		if (old.activeSeatId !== game.activeSeatId && game.phase === "initiation") {
 			setNextTurnSeat(game.activeSeatId);
-			const turnTimer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 1800);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
-			return function () { clearTimeout(turnTimer); };
+			return;
 		}
 		previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, reduced]);
+	useEffect(function () {
+		if (!nextTurnSeat || result) { return; }
+		const timer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 2800);
+		return function () { clearTimeout(timer); };
+	}, [nextTurnSeat, reduced, result]);
+	useEffect(function () {
+		const table = tableRef.current;
+		if (!table || !game.challenge) { setRoutePaths([]); return; }
+		let frame = 0;
+		function measure(): void {
+			const bounds = table!.getBoundingClientRect();
+			const felt = table!.querySelector<HTMLElement>(".play-area")?.getBoundingClientRect();
+			if (!felt) { setRoutePaths([]); return; }
+			const seats = new Map([...table!.querySelectorAll<HTMLElement>("[data-seat-id]")].map(element => [element.dataset.seatId!, element.getBoundingClientRect()]));
+			const feltBounds = { left: felt.left - bounds.left, right: felt.right - bounds.left, top: felt.top - bounds.top, bottom: felt.bottom - bounds.top };
+			const feltCenter = { x: (feltBounds.left + feltBounds.right) / 2, y: (feltBounds.top + feltBounds.bottom) / 2 };
+			function center(rect: DOMRect): { x: number; y: number } { return { x: rect.left + rect.width / 2 - bounds.left, y: rect.top + rect.height / 2 - bounds.top }; }
+			function edge(rect: DOMRect, target: { x: number; y: number }): { x: number; y: number } {
+				const origin = center(rect); const dx = target.x - origin.x; const dy = target.y - origin.y;
+				const scaleX = dx === 0 ? Number.POSITIVE_INFINITY : rect.width / 2 / Math.abs(dx);
+				const scaleY = dy === 0 ? Number.POSITIVE_INFINITY : rect.height / 2 / Math.abs(dy);
+				const scale = Math.min(scaleX, scaleY);
+				return { x: origin.x + dx * scale, y: origin.y + dy * scale };
+			}
+			setRoutePaths(game.challenge!.claims.flatMap(function (item, index) {
+				const from = seats.get(item.senderId); const to = seats.get(item.receiverId);
+				if (!from || !to) { return []; }
+				const fromCenter = center(from); const toCenter = center(to);
+				const midpoint = { x: (fromCenter.x + toCenter.x) / 2, y: (fromCenter.y + toCenter.y) / 2 };
+				const radial = { x: midpoint.x - feltCenter.x, y: midpoint.y - feltCenter.y };
+				const lane = 13 + index % 4 * 8;
+				let control: { x: number; y: number };
+				if (Math.max(Math.abs(radial.x), Math.abs(radial.y)) > 30) {
+					if (Math.abs(radial.x) > Math.abs(radial.y)) { control = { x: radial.x < 0 ? feltBounds.left + lane : feltBounds.right - lane, y: midpoint.y }; }
+					else { control = { x: midpoint.x, y: radial.y < 0 ? feltBounds.top + lane : feltBounds.bottom - lane }; }
+				}
+				else if (Math.abs(fromCenter.x - toCenter.x) > Math.abs(fromCenter.y - toCenter.y)) {
+					control = { x: midpoint.x, y: index % 2 === 0 ? feltBounds.top + lane : feltBounds.bottom - lane };
+				}
+				else { control = { x: index % 2 === 0 ? feltBounds.right - lane : feltBounds.left + lane, y: midpoint.y }; }
+				control.x = Math.max(feltBounds.left + lane, Math.min(feltBounds.right - lane, control.x));
+				control.y = Math.max(feltBounds.top + lane, Math.min(feltBounds.bottom - lane, control.y));
+				const start = edge(from, control); const end = edge(to, control);
+				return [{ d: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`, labelX: (start.x + 2 * control.x + end.x) / 4, labelY: (start.y + 2 * control.y + end.y) / 4 }];
+			}));
+		}
+		function schedule(): void { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); }
+		const observer = new ResizeObserver(schedule); observer.observe(table); schedule(); window.addEventListener("resize", schedule);
+		return function () { cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener("resize", schedule); };
+	}, [game.challenge?.id, game.challenge?.claims.length]);
 	function playVariant(variant: string): void {
 		if (muted) { return; }
 		void playNormalizedAudio(variant, 0.7).catch(function () { return; });
@@ -304,12 +372,13 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const routeSeatIds = new Set(game.challenge?.claims.flatMap(item => [item.senderId, item.receiverId]) ?? []);
 	const ownSeatIndex = me ? game.seats.findIndex(seat => seat.id === me.id) : -1;
 	const orderedSeats = ownSeatIndex >= 0 ? [...game.seats.slice(ownSeatIndex + 1), ...game.seats.slice(0, ownSeatIndex), game.seats[ownSeatIndex]!] : game.seats;
-	return <main className={`table${choosingTarget ? " table--choosing-target" : ""}${choosingResponse ? " table--choosing-response" : ""}`}><div className="table__heading"><div><p className="eyebrow">{FI.table.eyebrow}</p><h1>{game.phase === "ended" ? FI.table.endedHeading : FI.table.activeHeading}</h1></div><span className="table__limit">{FI.table.threshold(game.threshold)}</span></div>
+	return <main ref={tableRef} className={`table${choosingTarget ? " table--choosing-target" : ""}${choosingResponse ? " table--choosing-response" : ""}`}><div className="table__heading"><div><p className="eyebrow">{FI.table.eyebrow}</p><h1>{game.phase === "ended" ? FI.table.endedHeading : FI.table.activeHeading}</h1></div><span className="table__limit">{FI.table.threshold(game.threshold)}</span></div>
+		{routePaths.length > 0 && <svg className="table-routes" aria-hidden="true"><defs><marker id="route-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="context-stroke" /></marker></defs>{routePaths.map(function (route, index) { const current = index === routePaths.length - 1; return <g key={index} className={`table-routes__segment table-routes__segment--${index % 4}${current ? " table-routes__segment--current" : ""}`}><path className="table-routes__path" d={route.d} markerEnd="url(#route-arrow)" /><circle cx={route.labelX} cy={route.labelY} r="10" /><text x={route.labelX} y={route.labelY + 3}>{index + 1}</text></g>; })}</svg>}
 		<div className={`seats${game.phase !== "ended" ? ` seats--around seats--${orderedSeats.length}` : ""}`}>{orderedSeats.map(function (seat) {
 			const member = state.members.find(m => m.id === seat.personId);
 			const afk = required === seat.id && state.promptAt !== null && time - state.promptAt > 60000;
 			const targetable = targetIds.has(seat.id);
-			return <article key={seat.id} data-seat-id={seat.id} className={`seat${required === seat.id && game.phase !== "ended" ? " seat--active" : ""}${!member?.online || seat.removed ? " seat--offline" : ""}${selectedTarget === seat.id ? " seat--selected" : ""}${targetable ? " seat--targetable" : ""}${routeSeatIds.has(seat.id) ? " seat--on-route" : ""}${handoff?.from === seat.id ? " seat--sending" : ""}${handoff?.to === seat.id ? " seat--receiving" : ""}${nextTurnSeat === seat.id ? " seat--next-turn" : ""}${result && resolution?.penaltySeatId === seat.id ? " seat--penalty" : ""}`}>
+			return <article key={seat.id} data-seat-id={seat.id} className={`seat${required === seat.id && game.phase !== "ended" ? " seat--active" : ""}${!member?.online || seat.removed ? " seat--offline" : ""}${selectedTarget === seat.id ? " seat--selected" : ""}${targetable ? " seat--targetable" : ""}${routeSeatIds.has(seat.id) ? " seat--on-route" : ""}${claim?.senderId === seat.id ? " seat--claim-sender" : ""}${claim?.receiverId === seat.id ? " seat--claim-receiver" : ""}${handoff?.from === seat.id ? " seat--sending" : ""}${handoff?.to === seat.id ? " seat--receiving" : ""}${nextTurnSeat === seat.id ? " seat--next-turn" : ""}${result && resolution?.penaltySeatId === seat.id ? " seat--penalty" : ""}`}>
 				<button type="button" className="seat__target" disabled={!targetable || busy} aria-label={targetable ? FI.actions.choosePlayer(seat.name) : undefined} aria-pressed={selectedTarget === seat.id} onClick={() => setSelectedTarget(seat.id)}>
 					<div className="seat__identity"><Avatar name={seat.name} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong><small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : required === seat.id && game.phase !== "ended" ? FI.table.thinking : FI.table.handCount(seat.handCount)}</small></span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
 					<div className="seat__display">{CREATURES.map(function (creature) { const count = seat.display.filter(c => c.creature === creature).length; return count ? <span title={LABELS[creature]} className={`penalty${count >= game.threshold - 1 ? " penalty--danger" : ""}`} key={creature}><CreatureArt creature={creature} small /><b>{count}</b></span> : null; })}{!seat.display.length && <span className="seat__clean">{FI.table.cleanTable}</span>}</div>
@@ -318,8 +387,9 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			</article>;
 		})}</div>
 		{game.phase === "ended" ? <section className="end-panel"><p className="eyebrow">{game.loserSeatId ? FI.table.loser : FI.table.cancelled}</p><h2>{game.seats.find(s => s.id === game.loserSeatId)?.name ?? FI.table.noLoser}</h2><p>{game.endReason === "matching" ? FI.table.matchingLoss(game.threshold) : game.endReason === "empty" ? FI.table.emptyHandLoss : FI.session.gameEnded}</p>{state.hostId === state.me && <div className="end-panel__actions"><button className="button button--primary" onClick={() => command({ kind: "rematch" })}>{FI.table.rematch}</button><button className="button button--danger" onClick={function () { if (confirm(FI.table.endPlayingConfirm)) { void command({ kind: "close-lobby" }); } }}>{FI.table.endPlaying}</button></div>}<History items={state.history.filter(h => h.id === game.id)} /></section> : <>
-			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}<p className="eyebrow">{game.challenge ? FI.table.claimOnTable : FI.table.nextMove}</p>
-				{game.challenge ? <><div className="claim-presentation"><div className={`playing-card${game.challenge.card ? " playing-card--known" : ""}`}>{game.challenge.card ? <CreatureArt creature={game.challenge.card.creature} /> : <><span>✳</span><small>{FI.table.cardBack}</small></>}</div><span className="claim-presentation__arrow" aria-hidden="true">→</span><div className="claimed-card" aria-label={FI.table.claim(LABELS[claim!.creature].toLocaleLowerCase("fi"))}><small>{FI.table.claimCard}</small><CreatureArt creature={claim!.creature} small /><strong>{LABELS[claim!.creature]}</strong></div></div><h2>{FI.table.claim(LABELS[claim!.creature].toLocaleLowerCase("fi"))}</h2><p>{game.seats.find(s => s.id === claim!.senderId)?.name} → <strong>{game.seats.find(s => s.id === claim!.receiverId)?.name}</strong></p><div className="path" aria-label={FI.table.routeLabel}>{game.challenge.claims.map((c, i) => <span key={i}>{game.seats.find(s => s.id === c.senderId)?.name}: <b>{LABELS[c.creature]}</b> → {game.seats.find(s => s.id === c.receiverId)?.name}</span>)}</div></> : <><div className="table-mark">✳</div><h2>{FI.table.startTurn(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</h2><p>{FI.table.startPrompt}</p></>}
+			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}{nextTurnSeat && <div className="turn-banner" role="status"><span>{FI.table.nextPlayer(game.seats.find(s => s.id === nextTurnSeat)?.name ?? "")}</span></div>}
+				<p className="eyebrow">{game.challenge ? FI.table.claimOnTable : FI.table.nextMove}</p>
+				{game.challenge ? <><div className="claim-presentation"><div className={`playing-card${game.challenge.card ? " playing-card--known" : ""}`}>{game.challenge.card ? <CreatureArt creature={game.challenge.card.creature} /> : <><span>✳</span><small>{FI.table.cardBack}</small></>}</div><span className="claim-presentation__arrow" aria-hidden="true">→</span><div className="claimed-card" aria-label={FI.table.claim(claimSender, LABELS[claim!.creature].toLocaleLowerCase("fi"))}><small>{FI.table.claimCard}</small><CreatureArt creature={claim!.creature} small /><strong>{LABELS[claim!.creature]}</strong></div></div><h2>{FI.table.claim(claimSender, LABELS[claim!.creature].toLocaleLowerCase("fi"))}</h2><p><strong>{claimReceiver}n</strong> {FI.table.claimRecipient}</p></> : <><div className="table-mark">✳</div><h2>{FI.table.startTurn(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</h2><p>{FI.table.startPrompt}</p></>}
 				{result && resolution && <div className="resolution" role="status"><div className={`decision-token${resolution.receiverBelieves ? " decision-token--believe" : " decision-token--disbelieve"}`}><span>{resolution.receiverBelieves ? "✓" : "✕"}</span>{resolution.receiverBelieves ? FI.table.believe : FI.table.disbelieve}</div><div className="showdown"><div className="showdown__card showdown__card--claim"><small>VÄITE</small><CreatureArt creature={resolution.claims.at(-1)!.creature} /><strong>{LABELS[resolution.claims.at(-1)!.creature]}</strong></div><div className="showdown__card showdown__card--truth"><small>KORTTI</small><CreatureArt creature={resolution.card.creature} /><strong>{LABELS[resolution.card.creature]}</strong></div><span className={`showdown__stamp${resolution.claims.at(-1)!.creature === resolution.card.creature ? " showdown__stamp--true" : " showdown__stamp--false"}`}>{resolution.claims.at(-1)!.creature === resolution.card.creature ? "TOTTA" : "VALHE"}</span></div><p>{resolution.cancelled ? FI.table.cancelledRound : FI.table.takesCard(game.seats.find(s => s.id === resolution.penaltySeatId)?.name ?? "")}</p><span>{emoji} {outcome.length ? FI.round.correctAudienceGuesses(outcome.filter(Boolean).length, outcome.length) : ""}</span>{game.phase === "initiation" && <strong className="resolution__next">{FI.table.nextPlayer(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</strong>}</div>}
 			</section>
 			{hint && me?.id === required && <div className="hint"><span>{game.phase === "initiation" ? FI.table.startHint : FI.table.responseHint}</span><button className="text-button" onClick={() => setHint(false)}>{FI.table.dismissHint}</button></div>}
@@ -393,8 +463,11 @@ function recapPlayerStats(item: Recap, score: Score): { answersCorrect: number; 
 }
 function History({ items }: { items: Recap[] }): ReactElement {
 	const [selected, setSelected] = useState(items.at(-1)?.id ?? "");
+	const [shownRounds, setShownRounds] = useState(10);
 	const item = items.find(i => i.id === selected) ?? items.at(-1);
-	return <section className="history"><h2>{FI.history.title}</h2>{!item ? <p>{FI.history.empty}</p> : <><label className="history__select">{FI.history.select}<select value={item.id} onChange={e => setSelected(e.target.value)}>{[...items].reverse().map((r, i) => <option key={r.id} value={r.id}>{FI.history.game(items.length - i, new Date(r.startedAt).toLocaleString("fi-FI"), r.loserName ?? FI.history.cancelled)}</option>)}</select></label><p><strong>{item.loserName ? FI.history.loser(item.loserName) : FI.history.endedNoLoser}</strong> {FI.history.resolvedCards(item.resolutions.filter(r => !r.cancelled).length)}</p><div className="scores"><table><thead><tr><th>{FI.history.player}</th><th>{FI.history.guesses}</th><th>{FI.history.bluffCalls}</th><th>{FI.history.ownBluffs}</th></tr></thead><tbody>{[...item.scores].map(function (score) { const stats = recapPlayerStats(item, score); return <tr key={score.personId}><td>{score.name}</td><td><strong>{stats.answersCorrect}/{stats.answersSubmitted}</strong><small>{stats.answersSubmitted ? `${Math.round(stats.answersCorrect / stats.answersSubmitted * 100)} %` : "—"}</small></td><td><strong>{stats.bluffCallsCorrect} / {stats.bluffCallsWrong}</strong><small>{FI.history.rightWrong}</small></td><td><strong>{stats.bluffsPassed} / {stats.bluffsCaught}</strong><small>{FI.history.passedCaught}</small></td></tr>; })}</tbody></table></div><div className="awards">{item.awards.map(function (a) { const award = FI.history.awards[a.key as keyof typeof FI.history.awards] as AchievementText; return <article key={a.key}><span className="eyebrow">{a.personIds.map(id => item.scores.find(s => s.personId === id)?.name ?? FI.history.defaultPlayer).join(" & ")}</span><h3>{award.title}</h3><p>{award.copy}</p><footer>{achievementReason(a.key, item, a.personIds)}</footer></article>; })}</div><details><summary>{FI.history.roundByRound}</summary>{item.resolutions.map((r, i) => <details key={r.id}><summary>{i + 1}. {LABELS[r.card.creature]} · {r.cancelled ? FI.history.cancelled : FI.history.gotCard(item.scores.find(s => s.personId === r.penaltyPersonId)?.name ?? FI.history.defaultPlayer)}</summary><RoundDetails resolution={r} names={Object.fromEntries(item.scores.map(s => [s.personId, s.name]))} /></details>)}</details></>}</section>;
+	useEffect(function () { setShownRounds(10); }, [item?.id]);
+	const rounds = item ? item.resolutions.map((resolution, index) => ({ resolution, number: index + 1 })).reverse() : [];
+	return <section className="history"><h2>{FI.history.title}</h2>{!item ? <p>{FI.history.empty}</p> : <><label className="history__select">{FI.history.select}<select value={item.id} onChange={e => setSelected(e.target.value)}>{[...items].reverse().map((r, i) => <option key={r.id} value={r.id}>{FI.history.game(items.length - i, new Date(r.startedAt).toLocaleString("fi-FI"), r.loserName ?? FI.history.cancelled)}</option>)}</select></label><p><strong>{item.loserName ? FI.history.loser(item.loserName) : FI.history.endedNoLoser}</strong> {FI.history.resolvedCards(item.resolutions.filter(r => !r.cancelled).length)}</p><div className="scores"><table><thead><tr><th>{FI.history.player}</th><th>{FI.history.guesses}</th><th>{FI.history.bluffCalls}</th><th>{FI.history.ownBluffs}</th></tr></thead><tbody>{[...item.scores].map(function (score) { const stats = recapPlayerStats(item, score); return <tr key={score.personId}><td>{score.name}</td><td><strong>{stats.answersCorrect}/{stats.answersSubmitted}</strong><small>{stats.answersSubmitted ? `${Math.round(stats.answersCorrect / stats.answersSubmitted * 100)} %` : "—"}</small></td><td><strong>{stats.bluffCallsCorrect} / {stats.bluffCallsWrong}</strong><small>{FI.history.rightWrong}</small></td><td><strong>{stats.bluffsPassed} / {stats.bluffsCaught}</strong><small>{FI.history.passedCaught}</small></td></tr>; })}</tbody></table></div><div className="awards">{item.awards.map(function (a) { const award = FI.history.awards[a.key as keyof typeof FI.history.awards] as AchievementText; return <article key={a.key}><span className="eyebrow">{a.personIds.map(id => item.scores.find(s => s.personId === id)?.name ?? FI.history.defaultPlayer).join(" & ")}</span><h3>{award.title}</h3><p>{award.copy}</p><footer>{achievementReason(a.key, item, a.personIds)}</footer></article>; })}</div><section className="history__rounds"><h3>{FI.history.roundByRound}</h3>{rounds.slice(0, shownRounds).map(function ({ resolution: round, number }) { return <details key={round.id}><summary>{number}. {LABELS[round.card.creature]} · {round.cancelled ? FI.history.cancelled : FI.history.gotCard(item.scores.find(s => s.personId === round.penaltyPersonId)?.name ?? FI.history.defaultPlayer)}</summary><RoundDetails resolution={round} names={Object.fromEntries(item.scores.map(s => [s.personId, s.name]))} /></details>; })}{shownRounds < rounds.length && <button className="button button--quiet history__more" onClick={() => setShownRounds(count => Math.min(count + 10, rounds.length))}>{FI.history.showMore(rounds.length - shownRounds)}</button>}</section></>}</section>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
