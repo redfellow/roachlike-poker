@@ -88,11 +88,15 @@ function selectCard(seat: Seat): Card {
 		return (counts.get(b.creature)! - counts.get(a.creature)!) || CREATURES.indexOf(b.creature) - CREATURES.indexOf(a.creature) || b.id.localeCompare(a.id);
 	})[0]!;
 }
+function selectRotatingTarget(match: Match, seat: Seat, targetIds: readonly string[], turn: number): string {
+	const targets = match.seats.filter(candidate => targetIds.includes(candidate.id));
+	requireCondition(targets.length > 0, "Tietokoneella ei ole sallittua kohdetta.");
+	const seatIndex = match.seats.findIndex(candidate => candidate.id === seat.id);
+	return targets[(turn - 1 + seatIndex) % targets.length]!.id;
+}
 function selectTarget(match: Match, seat: Seat): string {
-	const targets = match.seats.filter(s => !s.removed && s.id !== seat.id);
-	return [...targets].sort(function (a, b) {
-		return a.hand.length - b.hand.length || a.id.localeCompare(b.id);
-	})[0]!.id;
+	const targets = match.seats.filter(candidate => !candidate.removed && candidate.id !== seat.id).map(candidate => candidate.id);
+	return selectRotatingTarget(match, seat, targets, match.nextChallenge);
 }
 function publicCoinFlip(value: string): boolean {
 	let hash = 2166136261;
@@ -133,9 +137,7 @@ export function chooseComputerAction(match: Match, personId: string): GameAction
 		if (eligibleTargets(match).length > 0 && publicCoinFlip(`peek:${match.challenge.id}:${match.challenge.claims.length}:${seat.id}`)) { return { type: "peek" }; }
 		return { type: "answer", believes: publicCoinFlip(`${match.challenge.id}:${match.challenge.claims.length}:${seat.id}:${claim.creature}`) };
 	}
-	const target = [...eligibleTargets(match)].sort(function (a, b) {
-		return match.seats.find(s => s.id === a)!.hand.length - match.seats.find(s => s.id === b)!.hand.length || a.localeCompare(b);
-	})[0]!;
+	const target = selectRotatingTarget(match, seat, eligibleTargets(match), match.challenge.claims.length);
 	const truthful = publicCoinFlip(`pass:${match.challenge.id}:${match.challenge.claims.length}:${seat.id}`);
 	return { type: "pass", targetId: target, creature: truthful ? match.challenge.card.creature : alternateCreature(match.challenge.card.creature, `${seat.id}:${target}`) };
 }

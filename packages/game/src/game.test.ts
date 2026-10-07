@@ -120,6 +120,21 @@ describe("privacy and predictions", function () {
 			expect(CREATURES).toContain(pass.creature);
 		}
 	});
+	it("rotates opening targets instead of repeatedly preferring the first seat", function () {
+		const match = game(3);
+		const actor = match.seats.find(seat => seat.id === match.activeSeatId)!;
+		const first = chooseComputerAction(match, actor.personId);
+		const next = structuredClone(match);
+		next.nextChallenge += 1;
+		const second = chooseComputerAction(next, actor.personId);
+		expect(first.type).toBe("send");
+		expect(second.type).toBe("send");
+		if (first.type === "send" && second.type === "send") {
+			expect(first.targetId).not.toBe(actor.id);
+			expect(second.targetId).not.toBe(actor.id);
+			expect(second.targetId).not.toBe(first.targetId);
+		}
+	});
 	it("makes private deterministic predictions without inspecting the card", function () {
 		const match = send(game(4));
 		const observer = match.seats.find(seat => seat.id !== match.activeSeatId && seat.id !== lastClaim(match.challenge!).receiverId)!;
