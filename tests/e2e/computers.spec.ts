@@ -85,6 +85,7 @@ test("six-seat table fits a portrait Chrome viewport", async function ({ browser
 
 test("resolution exposes the accessible showdown without leaking the incoming card", async function ({ page, request }) {
 	await createSoloTable(page, request, 2, false);
+	await expect(page.locator(".turn-banner")).toBeVisible();
 	for (let step = 0; step < 200; step++) {
 		const card = page.locator(".hand-card:not(:disabled)").first();
 		if (await card.isVisible()) {
@@ -125,6 +126,11 @@ test("computer answer shows Totta or Valhetta feedback", async function ({ page,
 			await claim.click({ force: true });
 			await claim.click({ force: true });
 			break;
+		}
+		const believe = page.locator(".responses").getByRole("button", { name: "Uskon", exact: true });
+		if (await believe.isVisible()) {
+			await believe.click({ force: true });
+			await expect(page.locator(".resolution")).toBeHidden({ timeout: 3000 });
 		}
 		await page.waitForTimeout(40);
 	}
