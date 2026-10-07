@@ -229,8 +229,10 @@ function Table({ state, command, busy, muted, guided, time }: { state: RoomView;
 	}).map(seat => seat.id));
 	const choosingTarget = targetIds.size > 0 && !selectedTarget;
 	const choosingResponse = game.phase === "response" && me?.id === required;
+	const ownSeatIndex = me ? game.seats.findIndex(seat => seat.id === me.id) : -1;
+	const orderedSeats = ownSeatIndex >= 0 ? [...game.seats.slice(ownSeatIndex + 1), ...game.seats.slice(0, ownSeatIndex), game.seats[ownSeatIndex]!] : game.seats;
 	return <main className={`table${choosingTarget ? " table--choosing-target" : ""}${choosingResponse ? " table--choosing-response" : ""}`}><div className="table__heading"><div><p className="eyebrow">{FI.table.eyebrow}</p><h1>{game.phase === "ended" ? FI.table.endedHeading : FI.table.activeHeading}</h1></div><span className="table__limit">{FI.table.threshold(game.threshold)}</span></div>
-		<div className="seats">{game.seats.map(function (seat) {
+		<div className={`seats${game.phase !== "ended" ? ` seats--around seats--${orderedSeats.length}` : ""}`}>{orderedSeats.map(function (seat) {
 			const member = state.members.find(m => m.id === seat.personId);
 			const afk = required === seat.id && state.promptAt !== null && time - state.promptAt > 60000;
 			const targetable = targetIds.has(seat.id);
