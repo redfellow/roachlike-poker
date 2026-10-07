@@ -49,6 +49,24 @@ afterEach(async function () {
 	for (const path of paths.splice(0)) { rmSync(path, { recursive: true, force: true }); }
 });
 describe("authoritative room transport", function () {
+	it("lists only rooms that their host has made open", async function () {
+		const { runtime, url } = await start();
+		const response = await runtime.app.inject({ method: "POST", url: "/api/rooms" });
+		const roomId = response.json<{ id: string }>().id;
+		const host = await connect(url, roomId, "Reiska");
+		const guest = await connect(url, roomId, "Kaveri");
+		await synced([host, guest]);
+		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([]);
+		expect((await act(guest, { kind: "set-open", open: true })).ok).toBe(false);
+		expect((await act(host, { kind: "set-open", open: true })).ok).toBe(true);
+		await synced([host, guest]);
+		expect(host.state!.open).toBe(true);
+		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([{
+			id: roomId, hostName: "Reiska", seatedCount: 2, spectatorCount: 0, playing: false
+		}]);
+		expect((await act(host, { kind: "set-open", open: false })).ok).toBe(true);
+		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([]);
+	});
 	it("starts a game, isolates spectators, rejects stale actions and deduplicates retries", async function () {
 		const { runtime, url } = await start();
 		const response = await runtime.app.inject({ method: "POST", url: "/api/rooms" });
@@ -312,6 +330,40 @@ describe("authoritative room transport", function () {
 		host.socket.disconnect();
 		await waitFor(() => runtime.store.all().length === 0);
 		expect(runtime.store.all()).toHaveLength(0);
+	});
+	it("removes a room after 30 minutes of inactivity", async function () {
+		let currentTime = 0;
+		const { runtime, url } = await start(":memory:", { now: () => currentTime });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		await connect(url, roomId, "A");
+		currentTime = 30 * 60 * 1000 + 1;
+		await waitFor(() => runtime.store.all().length === 0);
+	});
+	it("restores a persisted room without a last activity timestamp", async function () {
+		const dir = mkdtempSync(join(tmpdir(), "torakka-activity-restore-")); paths.push(dir);
+		const path = join(dir, "restore.sqlite");
+		const room = {
+			id: "restored-room",
+			revision: 1,
+			members: [{ id: "a", name: "A", token: "token-a", computer: true }],
+			seated: ["a"],
+			ready: [],
+			hostId: "a",
+			countdownAt: null,
+			game: null,
+			history: [],
+			vote: null,
+			waitingSeatId: null,
+			promptAt: null,
+			closed: false,
+			notice: "Room restored"
+		};
+		const store = new (await import("./store")).Store(path);
+		store.save(room.id, JSON.stringify(room));
+		store.close();
+		const { runtime } = await start(path, { now: () => 1_000_000 });
+		expect(runtime.store.all()).toHaveLength(1);
+		expect((JSON.parse(runtime.store.all()[0]!) as { lastActivityAt: number }).lastActivityAt).toBe(1_000_000);
 	});
 	it("ignores stale persisted rooms whose members are all offline", async function () {
 		const dir = mkdtempSync(join(tmpdir(), "torakka-room-cleanup-"));

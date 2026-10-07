@@ -5,17 +5,18 @@ import { randomInt, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { applyAction, chooseComputerAction, chooseComputerPrediction, createMatch, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap } from "@torakka/game";
-import { commandSchema, joinSchema, type Command, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
+import { commandSchema, joinSchema, type Command, type OpenRoomView, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
 import { Store } from "./store";
 
 interface Member { id: string; name: string; token: string; computer: boolean }
 interface Room {
 	id: string; revision: number; members: Member[]; seated: string[]; ready: string[]; hostId: string;
 	countdownAt: number | null; game: Match | null; history: Recap[]; vote: VoteView | null;
-	waitingSeatId: string | null; promptAt: number | null; closed: boolean; notice: string;
+	waitingSeatId: string | null; promptAt: number | null; closed: boolean; open: boolean; notice: string; lastActivityAt: number;
 }
 export interface Runtime { app: FastifyInstance; io: Server; store: Store; close: () => Promise<void> }
 const COMPUTER_NAMES = ["🤖 Pelti-Pena", "🤖 Valhe-Veikko", "🤖 Kusetus 3000", "🤖 Bluffi-Börje", "🤖 Ruoste-Rane", "🤖 Paska-Pascal"] as const;
+const roomInactivityMs = 30 * 60 * 1000;
 function random(): number { return randomInt(0, 2 ** 32) / 2 ** 32; }
 function normalizeName(name: string): string {
 	return name.trim().normalize("NFKC").toLocaleLowerCase("fi");
@@ -48,7 +49,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 	const now = options.now ?? Date.now;
 	const randomSource = options.random ?? random;
 	const countdownMs = options.countdownMs ?? 5000;
-	const computerDelayMs = options.computerDelayMs ?? 2200;
+	const computerDelayMs = options.computerDelayMs ?? 4300;
 	const computerTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	for (const state of store.all()) {
 		const room = JSON.parse(state) as Room;
@@ -61,6 +62,8 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			if (/^Tietokone \d+$/.test(member.name)) { member.name = COMPUTER_NAMES[computerIndex] ?? `🤖 Kusetusbotti ${computerIndex + 1}`; }
 			computerIndex++;
 		}
+		room.lastActivityAt ??= now();
+		room.open ??= false;
 		room.countdownAt = null; room.ready = []; room.vote = null; room.promptAt = null; ensureComputerReadiness(room); room.revision++;
 		rooms.set(room.id, room); store.save(room.id, JSON.stringify(room));
 	}
@@ -72,11 +75,20 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		store.save(room.id, JSON.stringify(room), receipt);
 		rooms.set(room.id, room);
 	}
+	function touch(room: Room): void { room.lastActivityAt = now(); }
+	function deleteRoom(room: Room): void {
+		const computerTimer = computerTimers.get(room.id);
+		if (computerTimer) { clearTimeout(computerTimer); computerTimers.delete(room.id); }
+		for (const [memberId, socket] of connections) {
+			if (room.members.some(member => member.id === memberId)) { socket.emit("lobby-closed"); socket.disconnect(); connections.delete(memberId); }
+		}
+		rooms.delete(room.id); store.delete(room.id);
+	}
 	function publicView(room: Room, me: string): RoomView {
 		return { id: room.id, revision: room.revision, me, hostId: room.hostId,
 			members: room.members.map(m => ({ id: m.id, name: m.name, online: memberOnline(room, m.id), seated: room.seated.includes(m.id), ready: room.ready.includes(m.id), computer: m.computer })),
 			countdownAt: room.countdownAt, game: room.game ? projectMatch(room.game, me) : null, vote: room.vote,
-			waitingSeatId: room.waitingSeatId, promptAt: room.promptAt, closed: room.closed, notice: room.notice, history: room.history };
+			waitingSeatId: room.waitingSeatId, promptAt: room.promptAt, closed: room.closed, open: room.open, notice: room.notice, history: room.history };
 	}
 	function broadcast(room: Room): void {
 		for (const member of room.members) { connections.get(member.id)?.emit("state", publicView(room, member.id)); }
@@ -151,6 +163,12 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			room.seated.push(member.id); room.ready.push(member.id);
 			room.countdownAt = null;
 			room.notice = `${member.name} lisättiin pöytään.`;
+			return;
+		}
+		if (action.kind === "set-open") {
+			requireCondition(actor === room.hostId && !game, "Vain isäntä voi muuttaa aulan näkyvyyttä ennen peliä.");
+			room.open = action.open;
+			room.notice = action.open ? "Aula näkyy nyt avoimien pöytien listalla." : "Aula on nyt yksityinen.";
 			return;
 		}
 		if (action.kind === "leave-table") {
@@ -248,10 +266,14 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}
 	}
 	app.get("/api/health", async function () { return { ok: true }; });
-	app.post("/api/rooms", async function (_request, reply) {
-		if (rooms.size > 0) { return reply.code(409).send({ error: "Yksi huone on jo luotu. Käytä kutsulinkkiä." }); }
+	app.get("/api/rooms/open", async function (): Promise<OpenRoomView[]> {
+		return [...rooms.values()].filter(room => room.open && !room.closed && room.members.length > 0).sort((a, b) => b.lastActivityAt - a.lastActivityAt).map(function (room) {
+			return { id: room.id, hostName: room.members.find(member => member.id === room.hostId)?.name ?? "Tuntematon", seatedCount: room.seated.length, spectatorCount: room.members.length - room.seated.length, playing: Boolean(room.game && room.game.phase !== "ended") };
+		});
+	});
+	app.post("/api/rooms", async function (_request, _reply) {
 		const room: Room = { id: randomUUID(), revision: 0, members: [], seated: [], ready: [], hostId: "", countdownAt: null,
-			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, notice: "Tervetuloa pöytään." };
+			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: false, notice: "Tervetuloa pöytään.", lastActivityAt: now() };
 		save(room); return { id: room.id };
 	});
 	io.on("connection", function (socket) {
@@ -299,7 +321,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				if (room.waitingSeatId && room.game?.seats.find(s => s.id === room.waitingSeatId)?.personId === member.id) { room.waitingSeatId = null; }
 				if (room.game && requiredSeat(room.game) === room.game.seats.find(s => s.personId === member.id)?.id) { room.promptAt = now(); }
 				room.notice = replaced ? `${member.name} palasi paikalle toiselta laitteelta.` : `${member.name} liittyi pöytään.`;
-				save(room); acknowledge({ ok: true, token: member.token }); broadcast(room);
+				touch(room); save(room); acknowledge({ ok: true, token: member.token }); broadcast(room);
 			}
 			catch (error) { replyError(error, acknowledge); }
 		});
@@ -318,16 +340,12 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				const room = structuredClone(original);
 				mutate(room, identity.personId, command);
 				updatePrompt(room, promptKey(original.game)); rememberEnd(room);
+				touch(room);
 				const destroyed = command.action.kind === "close-lobby" || (command.action.kind === "leave-table" && room.members.length === 0);
 				save(room, { actor: identity.personId, commandId: command.id });
 				if (destroyed) {
-					const computerTimer = computerTimers.get(room.id);
-					if (computerTimer) { clearTimeout(computerTimer); computerTimers.delete(room.id); }
-					rooms.delete(identity.roomId); store.delete(identity.roomId);
 					acknowledge({ ok: true });
-					for (const [memberId, socket] of connections) {
-						if (memberId === identity.personId || room.members.some(m => m.id === memberId)) { socket.emit("lobby-closed"); socket.disconnect(); connections.delete(memberId); }
-					}
+					deleteRoom(room);
 					return;
 				}
 				acknowledge({ ok: true }); broadcast(room); scheduleComputerTurn(room);
@@ -343,23 +361,31 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			room.ready = room.ready.filter(id => id !== identity!.personId);
 			if (room.seated.includes(identity.personId)) { room.countdownAt = null; }
 			if (room.vote && (room.vote.voters.includes(identity.personId) || room.vote.requesterId === identity.personId)) { room.vote = null; }
-			if (room.members.some(m => memberOnline(room, m.id))) { save(room); broadcast(room); return; }
+			if (room.members.some(m => memberOnline(room, m.id))) { touch(room); save(room); broadcast(room); return; }
 			if (room.game || room.history.length > 0) { save(room); return; }
 			rooms.delete(room.id); store.delete(room.id);
 		});
 	});
 	const timer = setInterval(function () {
 		for (const original of rooms.values()) {
-			if (original.countdownAt === null || original.countdownAt > now()) { continue; }
-			const room = structuredClone(original);
-			room.countdownAt = null;
-			if (room.seated.length >= 2 && room.seated.every(id => room.ready.includes(id) && memberOnline(room, id))) {
-				room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now());
-				room.promptAt = now(); room.ready = []; room.notice = "Kortit jaettu. Älä luota kehenkään.";
+			if (original.countdownAt !== null && original.countdownAt <= now()) {
+				const room = structuredClone(original);
+				room.countdownAt = null;
+				if (room.seated.length >= 2 && room.seated.every(id => room.ready.includes(id) && memberOnline(room, id))) {
+					room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now());
+					room.promptAt = now(); room.ready = []; room.notice = "Kortit jaettu. Älä luota kehenkään.";
+				}
+				touch(room); save(room); broadcast(room); scheduleComputerTurn(room);
 			}
-			save(room); broadcast(room); scheduleComputerTurn(room);
+			if (now() - original.lastActivityAt >= roomInactivityMs) {
+				const room = structuredClone(original);
+				for (const member of room.members) {
+					if (connections.has(member.id)) { continue; }
+				}
+				deleteRoom(room);
+			}
 		}
-	}, 100);
+	}, 1000);
 	const webRoot = resolve("apps/web/dist");
 	if (existsSync(webRoot)) {
 		await app.register(staticFiles, { root: webRoot });
