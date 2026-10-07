@@ -187,15 +187,21 @@ describe("recap evidence", function () {
 		const sender = options.sender ?? 0; const receiver = options.receiver ?? 1;
 		const actual = options.actual ?? "torakka"; const claim = options.claim ?? "lude";
 		const claims = [{ senderId: `s${sender}`, senderPersonId: `p${sender}`, receiverId: `s${receiver}`, creature: claim, predictions: options.predictions ?? [], locked: true }];
-		if (options.chain) { claims.unshift({ senderId: "s2", senderPersonId: "p2", receiverId: `s${sender}`, creature: "torakka", predictions: [], locked: true }); }
+		if (options.chain) {
+			claims.unshift(
+				{ senderId: "s3", senderPersonId: "p3", receiverId: "s2", creature: "torakka", predictions: [], locked: true },
+				{ senderId: "s2", senderPersonId: "p2", receiverId: `s${sender}`, creature: "torakka", predictions: [], locked: true }
+			);
+		}
 		return { id: `${match.id}:synthetic-${match.resolutions.length}`, card: { id: `card-${match.resolutions.length}`, creature: actual }, claims, receiverPersonId: `p${receiver}`, receiverBelieves: options.believes ?? true, penaltySeatId: `s${options.penalty ?? receiver}`, penaltyPersonId: `p${options.penalty ?? receiver}`, cancelled: false, ended: options.ended ?? false };
 	}
 	it("derives every accepted achievement from public resolution evidence", function () {
-		const match = game(4);
+		const match = game(5);
 		match.resolutions.push(
-			resolved(match, { believes: true, predictions: [{ personId: "p2", believes: true }, { personId: "p3", believes: true }], chain: true }),
+			resolved(match, { believes: true, predictions: [{ personId: "p2", believes: true }, { personId: "p3", believes: true }, { personId: "p4", believes: true }], chain: true }),
 			resolved(match, { believes: true }),
 			resolved(match, { sender: 2, receiver: 3, actual: "torakka", claim: "torakka", believes: false, penalty: 3, predictions: [{ personId: "p0", believes: true }] }),
+			resolved(match, { sender: 2, receiver: 3, actual: "torakka", claim: "torakka", believes: false, penalty: 3 }),
 			resolved(match, { sender: 2, receiver: 3, actual: "torakka", claim: "torakka", believes: false, penalty: 3 }),
 			resolved(match, { sender: 2, receiver: 3, actual: "torakka", claim: "torakka", believes: false, penalty: 3 }),
 			resolved(match, { sender: 1, receiver: 0, believes: false, penalty: 1 }),
@@ -206,7 +212,7 @@ describe("recap evidence", function () {
 		);
 		match.phase = "ended"; match.endReason = "matching"; match.loserSeatId = "s1";
 		const keys = new Set(achievements(match).map(award => award.key));
-		for (const key of ["bluffs", "catches", "correct", "chain", "twice", "crowd", "paranoid", "truth", "grave", "undertaker"]) { expect(keys.has(key), key).toBe(true); }
+		for (const key of ["chain", "twice", "crowd", "paranoid", "truth", "grave", "undertaker"]) { expect(keys.has(key), key).toBe(true); }
 	});
 	it("awards the longest chain to the losing receiver rather than every participant", function () {
 		const match = game(4);
@@ -216,6 +222,39 @@ describe("recap evidence", function () {
 		);
 		const chain = achievements(match).find(award => award.key === "chain");
 		expect(chain).toEqual({ key: "chain", personIds: ["p1"] });
+	});
+	it("does not award the longest chain when multiple chains share the record", function () {
+		const match = game(4);
+		match.resolutions.push(
+			{ ...resolved(match, { sender: 0, receiver: 1, believes: true, chain: true }), id: "chain-1" },
+			{ ...resolved(match, { sender: 1, receiver: 2, believes: true, chain: true }), id: "chain-2" }
+		);
+		expect(achievements(match).some(award => award.key === "chain")).toBe(false);
+	});
+	it("awards a unique longest chain to the player who actually took the card", function () {
+		const match = game(4);
+		match.resolutions.push(
+			{ ...resolved(match, { sender: 0, receiver: 1, believes: false, penalty: 0, chain: true }), id: "chain-1" },
+			{ ...resolved(match, { sender: 1, receiver: 2, believes: true }), id: "chain-2" }
+		);
+		expect(achievements(match).find(award => award.key === "chain")).toEqual({ key: "chain", personIds: ["p0"] });
+	});
+	it("derives the new bluff, prediction, and defeat achievements from resolutions", function () {
+		const match = game(4);
+		for (let index = 0; index < 10; index++) {
+			match.resolutions.push({
+				...resolved(match, { sender: 0, receiver: 1, believes: true, predictions: [{ personId: "p2", believes: false }, { personId: "p3", believes: true }] }),
+				id: `new-award-${index}`
+			});
+		}
+		match.phase = "ended"; match.endReason = "matching"; match.loserSeatId = "s1";
+		const byKey = new Map(achievements(match).map(award => [award.key, award.personIds]));
+		expect(byKey.get("poker-grave")).toContain("p0");
+		expect(byKey.get("serial-liar")).toContain("p0");
+		expect(byKey.get("trusting-dead")).toEqual(["p1"]);
+		expect(byKey.get("sofa-psychologist")).toContain("p2");
+		expect(byKey.get("wrong-professional")).toContain("p3");
+		expect(byKey.get("silent-partner")).toContain("p2");
 	});
 	it("distinguishes an exposed liar and empty-hand loser and ignores cancellation", function () {
 		const caught = game(4);

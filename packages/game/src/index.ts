@@ -324,13 +324,14 @@ export function recap(match: Match): Recap {
 export function achievements(match: Match): Award[] {
 	const result: Award[] = [];
 	const stats = scores(match);
-	const leaderboard = function (key: "bluffs" | "catches" | "correct"): void {
+	const leaderboard = function (key: "bluffs" | "catches" | "correct", minimum: number): void {
 		const max = Math.max(0, ...stats.map(s => s[key]));
-		if (max > 0) { result.push({ key, personIds: stats.filter(s => s[key] === max).map(s => s.personId) }); }
+		const leaders = stats.filter(s => s[key] === max);
+		if (max >= minimum && leaders.length === 1) { result.push({ key, personIds: leaders.map(s => s.personId) }); }
 	};
-	leaderboard("bluffs");
-	leaderboard("catches");
-	leaderboard("correct");
+	leaderboard("bluffs", 3);
+	leaderboard("catches", 3);
+	leaderboard("correct", 5);
 	const completed = match.resolutions.filter(r => !r.cancelled);
 	const add = function (key: string, ids: string[]): void {
 		if (!ids.length) { return; }
@@ -339,22 +340,60 @@ export function achievements(match: Match): Award[] {
 		else { result.push({ key, personIds: [...new Set(ids)] }); }
 	};
 	const longest = Math.max(0, ...completed.map(r => r.claims.length));
-	if (longest > 1) {
-		const winners = completed.filter(r => r.claims.length === longest).map(r => r.receiverPersonId);
-		add("chain", winners);
+	if (longest >= 3) {
+		const longestResolutions = completed.filter(r => r.claims.length === longest);
+		if (longestResolutions.length === 1) { add("chain", [longestResolutions[0]!.penaltyPersonId]); }
 	}
 	const pairStreak = new Map<string, number>();
 	const paranoid = new Map<string, number>();
 	const truth = new Map<string, number>();
+	const falseClaimStreak = new Map<string, number>();
+	const claimCounts = new Map<string, { total: number; truthful: number }>();
+	const answerCounts = new Map<string, { total: number; believes: number; believedLies: number }>();
+	const passCounts = new Map<string, number>();
+	const longChainCounts = new Map<string, number>();
+	const initialTargets = new Map<string, number>();
+	const sentTargets = new Map<string, Set<string>>();
 	const displayCounts = new Map<string, Record<string, number>>();
 	const dangerAt = new Map<string, { personId: string; index: number }>();
 	completed.forEach(function (r, index) {
 		const c = r.claims[r.claims.length - 1]!;
 		const lie = c.creature !== r.card.creature;
+		const activePeople = match.seats.filter(seat => !seat.removed).map(seat => seat.personId);
+		const atRisk = new Set(match.seats.filter(function (seat) {
+			const counts = displayCounts.get(seat.id) ?? {};
+			return CREATURES.some(creature => (counts[creature] ?? 0) >= match.threshold - 1);
+		}).map(seat => seat.personId));
+		for (const [claimIndex, item] of r.claims.entries()) {
+			const counts = claimCounts.get(item.senderPersonId) ?? { total: 0, truthful: 0 };
+			counts.total++; if (item.creature === r.card.creature) { counts.truthful++; }
+			claimCounts.set(item.senderPersonId, counts);
+			const streak = item.creature === r.card.creature ? 0 : (falseClaimStreak.get(item.senderPersonId) ?? 0) + 1;
+			falseClaimStreak.set(item.senderPersonId, streak);
+			if (streak >= 6) { add("serial-liar", [item.senderPersonId]); }
+			const targets = sentTargets.get(item.senderPersonId) ?? new Set<string>(); targets.add(match.seats.find(seat => seat.id === item.receiverId)?.personId ?? ""); sentTargets.set(item.senderPersonId, targets);
+			if (claimIndex > 0) { passCounts.set(item.senderPersonId, (passCounts.get(item.senderPersonId) ?? 0) + 1); }
+			const correctPredictions = item.predictions.filter(prediction => prediction.believes === (item.creature === r.card.creature));
+			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 1) { add("lone-genius", [correctPredictions[0]!.personId]); }
+			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 0) { add("herd-grave", item.predictions.map(prediction => prediction.personId)); }
+		}
+		const answers = answerCounts.get(r.receiverPersonId) ?? { total: 0, believes: 0, believedLies: 0 };
+		answers.total++; if (r.receiverBelieves) { answers.believes++; } if (r.receiverBelieves && lie) { answers.believedLies++; }
+		answerCounts.set(r.receiverPersonId, answers);
+		initialTargets.set(r.claims[0]!.receiverId, (initialTargets.get(r.claims[0]!.receiverId) ?? 0) + 1);
+		if (r.claims.length > 1) {
+			const participants = new Set([...r.claims.map(item => item.senderPersonId), r.receiverPersonId]);
+			for (const personId of participants) { longChainCounts.set(personId, (longChainCounts.get(personId) ?? 0) + 1); }
+			if (activePeople.length >= 5 && activePeople.every(personId => participants.has(personId))) { add("full-circle", [...participants]); }
+			if (r.claims.length >= 3 && r.receiverPersonId === r.claims[0]!.senderPersonId) { add("return-sender", [r.receiverPersonId]); }
+		}
+		if (match.people.length >= 5 && lie && r.receiverBelieves && c.predictions.length >= 3 && c.predictions.every(prediction => !prediction.believes)) { add("cheap-bluff", [c.senderPersonId]); }
+		if (lie && r.receiverBelieves && atRisk.has(c.senderPersonId)) { add("last-bluff", [c.senderPersonId]); }
+		if (!lie && !r.receiverBelieves && atRisk.has(c.senderPersonId)) { add("wrong-corpse", [r.receiverPersonId]); }
 		const pair = `${c.senderPersonId}:${r.receiverPersonId}`;
 		pairStreak.set(pair, lie && r.receiverBelieves ? (pairStreak.get(pair) ?? 0) + 1 : 0);
-		if ((pairStreak.get(pair) ?? 0) >= 2) { add("twice", [c.senderPersonId]); }
-		if (lie && r.receiverBelieves && c.predictions.length >= 2 && c.predictions.every(p => p.believes)) {
+		if ((pairStreak.get(pair) ?? 0) >= 3) { add("twice", [c.senderPersonId]); }
+		if (match.people.length >= 5 && lie && r.receiverBelieves && c.predictions.length >= 3 && c.predictions.every(p => p.believes)) {
 			add("crowd", [c.senderPersonId]);
 		}
 		if (!lie && !r.receiverBelieves) {
@@ -369,10 +408,35 @@ export function achievements(match: Match): Award[] {
 		displayCounts.set(r.penaltySeatId, counts);
 		if (counts[r.card.creature] === match.threshold - 1 && !dangerAt.has(r.penaltySeatId)) { dangerAt.set(r.penaltySeatId, { personId: r.penaltyPersonId, index }); }
 	});
-	add("paranoid", [...paranoid].filter(([, n]) => n >= 3).map(([id]) => id));
-	add("truth", [...truth].filter(([, n]) => n >= 3).map(([id]) => id));
+	add("paranoid", [...paranoid].filter(([, n]) => n >= 4).map(([id]) => id));
+	add("truth", [...truth].filter(([, n]) => n >= 4).map(([id]) => id));
+	add("poker-grave", stats.filter(score => score.bluffs >= 5).map(score => score.personId));
+	add("lie-detector", stats.filter(score => score.catches >= 5).map(score => score.personId));
+	add("honest-bastard", [...claimCounts].filter(([, counts]) => counts.total >= 7 && counts.truthful === counts.total).map(([id]) => id));
+	add("trust-issues", stats.filter(score => score.bluffCallsCorrect + score.bluffCallsWrong >= 7 && score.bluffCallsCorrect <= 1).map(score => score.personId));
+	add("optimist", [...answerCounts].filter(([, counts]) => counts.total >= 7 && counts.believes === counts.total).map(([id]) => id));
+	add("recycle-problem", [...passCounts].filter(([, count]) => count >= 5).map(([id]) => id));
+	add("dirty-baton", [...longChainCounts].filter(([, count]) => count >= 5).map(([id]) => id));
+	add("sofa-psychologist", stats.filter(score => score.submitted >= 8 && score.correct === score.submitted).map(score => score.personId));
+	add("wrong-professional", stats.filter(score => score.submitted >= 8 && score.correct === 0).map(score => score.personId));
+	for (const seat of match.seats.filter(item => !item.removed)) {
+		const targets = sentTargets.get(seat.personId) ?? new Set<string>(); targets.delete("");
+		if (match.people.length >= 4 && match.seats.filter(item => !item.removed && item.personId !== seat.personId).every(item => targets.has(item.personId))) { add("equal-bastard", [seat.personId]); }
+	}
+	if (match.phase === "ended" && completed.length >= 10) {
+		add("silent-partner", match.seats.filter(item => !item.removed && (claimCounts.get(item.personId)?.total ?? 0) === 0 && (answerCounts.get(item.personId)?.total ?? 0) === 0).map(item => item.personId));
+	}
+	const mostInitialTargets = Math.max(0, ...initialTargets.values());
+	if (mostInitialTargets >= 5) {
+		const mostTargeted = [...initialTargets].filter(([, count]) => count === mostInitialTargets).map(([seatId]) => match.seats.find(seat => seat.id === seatId)?.personId).filter((id): id is string => Boolean(id));
+		if (mostTargeted.length === 1 && match.seats.find(seat => seat.id === match.loserSeatId)?.personId !== mostTargeted[0]) { add("bullet-dodger", mostTargeted); }
+	}
 	if (match.phase === "ended" && match.loserSeatId) {
-		add("grave", [...dangerAt].filter(([seatId, entry]) => seatId !== match.loserSeatId && completed.length - 1 - entry.index >= 3 && match.seats.some(s => s.id === seatId && !s.removed && s.personId === entry.personId)).map(([, entry]) => entry.personId));
+		const loser = match.seats.find(s => s.id === match.loserSeatId)!.personId;
+		if (completed.length >= 25) { add("slow-death", [loser]); }
+		if ((claimCounts.get(loser)?.total ?? 0) >= 4 && claimCounts.get(loser)!.truthful === claimCounts.get(loser)!.total) { add("clean-corpse", [loser]); }
+		if ((answerCounts.get(loser)?.believedLies ?? 0) >= 5) { add("trusting-dead", [loser]); }
+		add("grave", [...dangerAt].filter(([seatId, entry]) => seatId !== match.loserSeatId && completed.length - 1 - entry.index >= 5 && match.seats.some(s => s.id === seatId && !s.removed && s.personId === entry.personId)).map(([, entry]) => entry.personId));
 		if (match.endReason === "empty") { add("empty", [match.seats.find(s => s.id === match.loserSeatId)!.personId]); }
 	}
 	return result;
