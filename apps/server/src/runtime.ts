@@ -17,6 +17,9 @@ interface Room {
 export interface Runtime { app: FastifyInstance; io: Server; store: Store; close: () => Promise<void> }
 const COMPUTER_NAMES = ["🤖 Pelti-Pena", "🤖 Valhe-Veikko", "🤖 Kusetus 3000", "🤖 Bluffi-Börje", "🤖 Ruoste-Rane", "🤖 Paska-Pascal"] as const;
 function random(): number { return randomInt(0, 2 ** 32) / 2 ** 32; }
+function normalizeName(name: string): string {
+	return name.trim().normalize("NFKC").toLocaleLowerCase("fi");
+}
 function createComputerName(room: Room): string {
 	return COMPUTER_NAMES.find(name => !room.members.some(member => member.name === name)) ?? `🤖 Kusetusbotti ${room.members.filter(member => member.computer).length + 1}`;
 }
@@ -269,12 +272,13 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				requireCondition(existing, "Huonetta ei löytynyt. Tarkista kutsulinkki.");
 				requireCondition(!existing.closed, "Pöytä on suljettu. Uusia pelaajia ei voi liittyä.");
 				const room = structuredClone(existing);
+				const normalizedName = normalizeName(data.name);
 				let member = data.token ? room.members.find(m => m.token === data.token) : undefined;
 				let replaced = false;
 				if (!member) {
-					const named = room.members.find(m => m.name.toLocaleLowerCase("fi") === data.name.toLocaleLowerCase("fi"));
+					const named = room.members.find(m => normalizeName(m.name) === normalizedName);
 					if (named) {
-						requireCondition(named.name === data.name && !memberOnline(room, named.id), "Nimi on jo käytössä.");
+						requireCondition(normalizeName(named.name) === normalizedName && !memberOnline(room, named.id), "Nimi on jo käytössä.");
 						const removed = room.game?.seats.some(s => s.personId === named.id && s.removed);
 						requireCondition(!removed, "Tämä paikka on poistettu pelistä.");
 						member = named; member.token = randomUUID(); replaced = true;
