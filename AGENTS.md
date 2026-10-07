@@ -48,6 +48,8 @@ When asked to commit, propose the commit message and request approval before com
 
 PRs should explain purpose, link relevant issues, list validation, and include screenshots for interface changes.
 
+When asked to suggest commits, always check the files, also consider unstaged.
+
 ## Releasing New Versions
 
 When asked to tag a release:
