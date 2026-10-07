@@ -1,6 +1,6 @@
 # Technical Plan
 
-Status: stack accepted, with existing Windows Nginx replacing the proposed Caddy server. Detailed operational defaults still require review. Target: a small private group, Windows hosting, desktop Chrome with responsive viewport testing for MVP, persistent games, gameplay before integrated video.
+Status: stack implemented, with existing Windows Nginx replacing the proposed Caddy server. Production-host verification remains. Target: a small friend group, Windows hosting, desktop Chrome with responsive viewport testing for MVP, persistent games, gameplay before integrated video.
 
 ## Stack
 
@@ -17,7 +17,7 @@ Status: stack accepted, with existing Windows Nginx replacing the proposed Caddy
 
 Use npm workspaces and a lockfile. Pin compatible stable dependencies during setup; check native SQLite installation on the actual Windows host. Do not add a formatter that rewrites Stroustrup braces. Prefer ordinary CSS transitions and small original retro sound effects initially.
 
-Proposed layout: `apps/web/`, `apps/server/`, `packages/game/`, `packages/protocol/`, `tests/e2e/`, and `ops/`. The pure game package must not depend on UI, transport, or storage. These directories do not exist yet.
+Repository layout: `apps/web/`, `apps/server/`, `packages/game/`, `packages/protocol/`, `tests/e2e/`, and `ops/`. The pure game package does not depend on UI, transport, or storage.
 
 ## Authoritative State and Privacy
 
@@ -25,7 +25,7 @@ The browser submits intentions, never outcomes. The server checks actor identity
 
 Generate public, per-player, and spectator projections explicitly. Never send other hands, grouped stack counts, unrevealed card identities, private selections, or pending predictions to unauthorized clients. Use opaque card identifiers that do not encode creature types.
 
-MVP supports one active room; simultaneous rooms are deferred. Separate room, match, seat, person, and connection identities so the design can grow later. Reconnecting the same person preserves stats; a voted replacement inherits the seat but starts their own personal stats. Name-based recovery is an explicitly accepted trust model for private friends' rooms. Tokens still identify ordinary sessions; reclaim invalidates older seat control.
+The server supports multiple independent rooms. Rooms are private by default; a host can publish a public summary to the landing page's open-room list without exposing hands, predictions, tokens, or recap data. Separate room, match, seat, person, and connection identities are retained. Reconnecting the same person preserves stats; a voted replacement inherits the seat but starts their own personal stats. Name-based recovery is an explicitly accepted trust model for friend rooms. Tokens still identify ordinary sessions; reclaim invalidates older seat control.
 
 ## Persistence and Recovery
 

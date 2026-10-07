@@ -1,6 +1,6 @@
 # roachlike
 
-A private-room bluffing card game for 2–6 friends, with a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
+A browser-based bluffing card game for 2–6 friends, with private invite rooms, optional open-room discovery, and a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
 
 ## Credits
 
@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. Create a room and share its `/r/...` link. Use separate browser profiles/contexts to play multiple people locally; tabs share device/session storage. One active room is supported initially. The browser remembers the room link and name.
+Open **http://127.0.0.1:5173**. Create a room and share its `/r/...` link, or let the host publish it in the landing page's open-room list. Use separate browser profiles/contexts to play multiple people locally; tabs share device/session storage. The server supports multiple independent rooms. The browser remembers the latest room link and name.
 
 The API listens on `127.0.0.1:3001`. The Vite development server proxies API and Socket.IO traffic. Both listeners are local-only by default. SQLite is stored at `data/torakkapokeri.sqlite`; it is private server data and must never be served as static content.
 
@@ -52,6 +52,6 @@ This is a friends-only identity model: an exact-name join may reclaim a disconne
 
 ## Configuration and deployment
 
-`TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 2200 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
+`TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 4300 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
 
 See [Windows deployment](ops/windows.md), [rules contract](docs/rules-contract.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).

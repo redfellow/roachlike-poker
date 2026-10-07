@@ -35,7 +35,7 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 ## Rooms, Identity, and Spectators
 
-- MVP scope is one active private room with an invite link; multiple simultaneous rooms are a future possibility. Retain room identities in the design. No public room listing. A separate room-code feature has not been requested.
+- Rooms are private by default and always retain an invite link. A host may publish a lobby in the landing page's open-room list; active open games accept late arrivals as spectators. The server supports multiple simultaneous room identities. A separate room-code feature has not been requested.
 - Players ready up. Once all are ready, show an animated five-second countdown. Start automatically without a separate host action; cancel if someone unreadies, disconnects, or a new player joins. Spectators do not affect readiness. Require 2–6 players.
 - Late arrivals can spectate public gameplay, never private hands.
 - Names must be unique among connected players. An exact-name join can reclaim a disconnected player's seat, including from another device. No approval is required for this friends-only recovery; notify the table of the replacement. Revoke the old device’s control and show it a seat-in-use message. Transfer races and name normalization remain to be specified.
@@ -88,7 +88,7 @@ Each bucket requires explicit scope, dependencies, acceptance criteria, and veri
 | 2. Project foundation | Agreed stack, scripts, and development setup | Reproducible setup and configured checks; builds only when requested |
 | 3. Game engine | Rules implemented independently of UI | Deterministic tests for legal/illegal actions, resolution, and end conditions |
 | 4. Browser table | Hands, targets, claims, responses, reveal, and penalties | Scripted games in desktop Chrome at desktop/mobile viewport sizes; inspect animations and hidden information |
-| 5. Multiplayer rooms | Private links, deterministic avatars, unique names, ready countdown, public spectators, and synchronized gameplay | Complete games across browsers; verify visibility, countdown cancellation, and late joins |
+| 5. Multiplayer rooms | Private links, optional open-room discovery, deterministic avatars, unique names, ready countdown, public spectators, and synchronized gameplay | Complete games across browsers; verify visibility, countdown cancellation, and late joins |
 | 6. Recovery and departures | Seat reclaim, voted replacements, host transfer, confirmed removal, and redistribution | Test device swaps, stale connections, card conservation, blocked challenges, and minimum player counts |
 | 7. Predictions, results, and rematches | Private predictions, post-resolution reveal, loser spotlight, factual highlights, and fresh lobby | Verify prediction privacy and locking, recap evidence, retained players, and new joins |
 | 8. Gameplay acceptance | Complete playable game using external calls | Friend-group playtest; resolve gameplay and usability blockers |

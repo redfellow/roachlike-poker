@@ -1,6 +1,6 @@
 # Implementation Backlog
 
-Status: implementation in progress; see [mvp-status.md](mvp-status.md) for verified evidence and remaining work. Product decisions live in [project-plan.md](project-plan.md); rules in [initial-info.md](initial-info.md). Stack is accepted, using the existing Windows Nginx deployment described in [technical-plan.md](technical-plan.md). Application code and initial tests are implemented; no production builds have been run. MVP scope: one active room, persistent recap history, desktop Chrome tested at desktop/mobile dimensions; no separate iPhone testing required.
+Status: gameplay implementation is feature-complete pending stabilization and acceptance; see [mvp-status.md](mvp-status.md) for verified evidence and remaining work. Product decisions live in [project-plan.md](project-plan.md); rules in [initial-info.md](initial-info.md). Rooms are private by default with optional open-room discovery, persistent recap history, and multiple independent room identities. Desktop Chrome is tested at desktop/mobile dimensions; no separate iPhone testing is required. No production build has been run.
 
 Each numbered task is a separately reviewable increment. Finish its acceptance checks before moving to dependent tasks. Use pure-rule tests, storage/transport integration tests, and browser tests where each best verifies behavior. No arbitrary coverage percentage is required. Builds run only when requested.
 
@@ -19,7 +19,7 @@ Review artifact: [rules-contract.md](rules-contract.md), containing phases, comm
 Dependency: stack selection (complete); may proceed independently of remaining house-rule details.
 
 - [ ] B1.1 Create workspaces and runtime/package configuration. **Check:** documented installation on development machine and Windows host; no platform-specific shell assumptions.
-- [ ] B1.2 Configure TypeScript and lint rules matching AGENTS.md. **Check:** type/lint commands detect forbidden any, incorrect braces, and other configured conventions.
+- [x] B1.2 Configure TypeScript and lint rules matching AGENTS.md. **Check:** type/lint commands detect forbidden any, incorrect braces, and other configured conventions.
 - [x] B1.3 Configure unit, integration, and browser runners. Document dev/test/check commands and data locations. **Check:** a meaningful initial rules fixture runs through the test command; separate browser contexts are available for later tests.
 
 ## B2 — Pure Game Engine
@@ -27,9 +27,9 @@ Dependency: stack selection (complete); may proceed independently of remaining h
 Dependency: B1 and B0.1.
 
 - [x] B2.1 Deck, shuffle injection, deals, random first player. **Check:** exact 2–6-player hand sizes, unique 64-card inventory, ten unseen removals only for two-player setup.
-- [ ] B2.2 Initiation, claim, and true/false resolution. **Check:** all four claim/response combinations; correct loser, display, and next actor; reject wrong actors and unavailable cards.
+- [x] B2.2 Initiation, claim, and true/false resolution. **Check:** all four claim/response combinations; correct loser, display, and next actor; reject wrong actors and unavailable cards.
 - [x] B2.3 Peek commitment, passing, path, and forced response. **Check:** no return to calling after peek, no repeated recipient, latest sender liability, last eligible recipient cannot pass.
-- [ ] B2.4 Defeat checks and terminal state. **Check:** thresholds four/five, empty-hand defeat only when required to lead, game-over commands rejected.
+- [x] B2.4 Defeat checks and terminal state. **Check:** thresholds four/five, empty-hand defeat only when required to lead, game-over commands rejected.
 - [x] B2.5 Information projections. **Check:** full payload assertions for each player and spectator; hidden cards and private grouped counts never appear outside authorized views.
 
 Review gate: complete deterministic games and invalid-action scenarios without browser or network.
@@ -39,9 +39,9 @@ Review gate: complete deterministic games and invalid-action scenarios without b
 Dependency: B2.
 
 - [ ] B3.1 Persistent room/match/seat/person schema and migrations. **Check:** save/load every gameplay phase without changing cards or ownership.
-- [ ] B3.2 Validated command pipeline, per-room serialization, deduplication, and revisions. **Check:** concurrent responses, double-clicks, stale commands, malformed messages, and wrong-seat actions cannot apply twice or mutate unauthorized state.
-- [ ] B3.3 Commit state/receipts/events atomically before broadcasts. **Check:** terminate before commit, after commit before acknowledgment, and during broadcast; recover one consistent result.
-- [ ] B3.4 Socket connections and authorized snapshots. **Check:** refresh, network loss, and server restart recover hands, pending peek, claims, predictions when added, and match revision.
+- [x] B3.2 Validated command pipeline, per-room serialization, deduplication, and revisions. **Check:** concurrent responses, double-clicks, stale commands, malformed messages, and wrong-seat actions cannot apply twice or mutate unauthorized state.
+- [x] B3.3 Commit state/receipts/events atomically before broadcasts. **Check:** terminate before commit, after commit before acknowledgment, and during broadcast; recover one consistent result.
+- [x] B3.4 Socket connections and authorized snapshots. **Check:** refresh, network loss, and server restart recover hands, pending peek, claims, predictions when added, and match revision.
 
 Review gate: separate clients complete a persisted game, including a forced restart.
 
@@ -49,10 +49,10 @@ Review gate: separate clients complete a persisted game, including a forced rest
 
 Dependency: B3.
 
-- [ ] B4.1 Private room links, names, deterministic avatars, and 2–6 seats. **Check:** duplicate connected names rejected, seventh player cannot occupy a seat, invite route restores correct room.
-- [ ] B4.2 Ready controls and automatic animated five-second countdown. **Check:** unready, disconnect, and new seated join cancel; spectator join does not; only one game starts.
-- [ ] B4.3 Late spectator view and host transfer. **Check:** spectators receive public state only; host departure selects one connected successor.
-- [ ] B4.4 Exact-name disconnected-seat reclaim. **Check:** notify table, preserve state, revoke old device; simultaneous claims yield only one controller and old commands are rejected.
+- [x] B4.1 Private/open room links, names, deterministic avatars, and 2–6 seats. **Check:** duplicate connected names rejected, seventh player cannot occupy a seat, invite route restores correct room, and only host-published rooms appear publicly.
+- [x] B4.2 Ready controls and automatic animated five-second countdown. **Check:** unready, disconnect, and new seated join cancel; spectator join does not; only one game starts.
+- [x] B4.3 Late spectator view and host transfer. **Check:** spectators receive public state only; host departure selects one connected successor.
+- [x] B4.4 Exact-name disconnected-seat reclaim. **Check:** notify table, preserve state, revoke old device; simultaneous claims yield only one controller and old commands are rejected.
 
 Review gate: real invite-to-first-turn flow in multiple Chrome sessions.
 
@@ -72,11 +72,11 @@ Review gate: full 2- and 6-player games usable in desktop Chrome at desktop and 
 
 Dependency: B0.2, B3, B4, and table seat controls.
 
-- [ ] B6.1 Disconnected chairs and AFK eligibility. **Check:** no global pause, required-action clock only, eligibility strictly after 60 seconds, no automatic action or defeat.
-- [ ] B6.2 Spectator requests and majority voting. **Check:** only eligible seats, requester excluded, owner return/valid response cancels, reconnect/vote races resolve once.
-- [ ] B6.3 Apply voted replacement atomically. **Check:** hand/display/peek obligation inherited, previous controller revoked, personal stats separate, prior knowledge policy enforced.
-- [ ] B6.4 Host-confirmed permanent removal and redistribution. **Check:** shuffle/even distribution, retired displays, cancelled card revealed/retired once, zero cancellation penalty, card conservation, risk-aware next actor.
-- [ ] B6.5 Replacement-needed state below minimum remaining count. **Check:** intact seat and hand, no redistribution, replacement resumes exact obligation, End game yields no loser.
+- [x] B6.1 Disconnected chairs and AFK eligibility. **Check:** no global pause, required-action clock only, eligibility strictly after 60 seconds, no automatic action or defeat.
+- [x] B6.2 Spectator requests and majority voting. **Check:** only eligible seats, requester excluded, owner return/valid response cancels, reconnect/vote races resolve once.
+- [x] B6.3 Apply voted replacement atomically. **Check:** hand/display/peek obligation inherited, previous controller revoked, personal stats separate, prior knowledge policy enforced.
+- [x] B6.4 Host-confirmed permanent removal and redistribution. **Check:** shuffle/even distribution, retired displays, cancelled card revealed/retired once, zero cancellation penalty, card conservation, risk-aware next actor.
+- [x] B6.5 Replacement-needed state below minimum remaining count. **Check:** intact seat and hand, no redistribution, replacement resumes exact obligation, End game yields no loser.
 
 Review gate: scripted departure matrix across all phases, including server restart during a vote or replacement wait.
 
@@ -84,12 +84,12 @@ Review gate: scripted departure matrix across all phases, including server resta
 
 Dependency: B3 and B5; person-attribution checks depend on B6.
 
-- [ ] B7.1 Private eligible-player predictions per claim. **Check:** receiver/seen players/spectators excluded, lock on receiver action, new opportunity after pass, no pre-resolution leak.
-- [ ] B7.2 Prediction scoring and aggregate emojis. **Check:** +1/0/0, cancelled challenge scores zero, accurate submitted-prediction denominator, restart cannot double-score; zero predictions is neutral.
-- [ ] B7.3 Implement accepted achievements from event fixtures. **Check:** qualifying/nonqualifying boundaries, ties, two-player thresholds, replaced people, no inference of belief from passing.
-- [ ] B7.4 Loser spotlight, factual recap, highlights, and same-link rematch. **Check:** all players return to lobby with readiness reset, newcomers can join, ended-without-loser matches are distinct, no old hand/prediction data enters new match.
+- [x] B7.1 Private eligible-player predictions per claim. **Check:** receiver/seen players/spectators excluded, lock on receiver action, new opportunity after pass, no pre-resolution leak.
+- [x] B7.2 Prediction scoring and aggregate emojis. **Check:** +1/0/0, cancelled challenge scores zero, accurate submitted-prediction denominator, restart cannot double-score; zero predictions is neutral.
+- [x] B7.3 Implement accepted achievements from event fixtures. **Check:** qualifying/nonqualifying boundaries, ties, two-player thresholds, replaced people, no inference of belief from passing.
+- [x] B7.4 Loser spotlight, factual recap, highlights, and same-link rematch. **Check:** all players return to lobby with readiness reset, newcomers can join, ended-without-loser matches are distinct, no old hand/prediction data enters new match.
 
-- [ ] B7.5 Persistent recap history and history view. **Check:** earlier match recaps survive rematches and server restarts, remain selectable, and never expose unrevealed hands or cancelled private predictions. Starting a match cannot overwrite earlier history.
+- [x] B7.5 Persistent recap history and history view. **Check:** earlier match recaps survive rematches and server restarts, remain selectable, and never expose unrevealed hands or cancelled private predictions. Starting a match cannot overwrite earlier history.
 
 Review gate: compare a scripted match's recap and every award against its actual event history; reopen earlier recaps after rematch and restart.
 
@@ -112,6 +112,15 @@ Dependency: gameplay buckets and the computer-player work below; host reachabili
 - [ ] B8.3 Run friend-group acceptance sessions at 2, 3, and 6 players. **Check:** complete games, external calls, controls at mobile viewport sizes, recovery, replacements, recap, and rematch. Record and fix blockers.
 
 Gate: user accepts gameplay before media implementation. Deployment/build execution occurs only when requested; these are planned tasks.
+
+## B8S — Stabilization and Release Candidate
+
+Dependency: implemented gameplay buckets. These checks run before Windows deployment and friend-group acceptance are considered complete.
+
+- [ ] B8S.1 Make all Playwright scenarios pass repeatedly. **Check:** remove the intermittent full-game timeout without weakening assertions; verify open-room discovery, reconnect, rematch, and complete computer games together.
+- [ ] B8S.2 Review the table at narrow and wide desktop sizes with 2–6 seats. **Check:** no player card, public total, route, banner, claim, response, or private hand obscures another required control or datum.
+- [ ] B8S.3 Validate achievement frequency and boundaries. **Check:** deterministic fixtures cover every award; several representative long games produce a selective recap rather than awarding most of the catalog.
+- [ ] B8S.4 Run the release-candidate check set after stabilization changes. **Check:** type checks, lint, 68+ unit/integration tests, simulations, and the full Chrome suite pass from a clean checkout.
 
 ## B9 — Integrated Audio/Video, After Gameplay Acceptance
 
@@ -138,5 +147,5 @@ These decisions are now approved and implemented in the rules contract and runti
 ## Operational Questions
 
 - Windows version and verification of existing domain/Nginx reachability. Real-device/mobile-OS validation is deferred beyond MVP.
-- Backup destination, saved recap retention policy, and spectator limits. One active room is the MVP scope; multiple simultaneous rooms are deferred.
+- Backup destination, saved recap retention policy, maximum simultaneous rooms, and spectator limits.
 - Media-phase pause/resume policy and unexpected dropout handling; user mute/camera-off explicitly pauses the game. No media pause logic in external-call MVP.
