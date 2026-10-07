@@ -389,6 +389,27 @@ describe("departure and history integration", function () {
 		expect(restored.state!.game!.seats.find(seat => seat.id === seatId)!.personId).toBe(restored.state!.me);
 		expect(spectator.state!.game!.hand).toEqual([]);
 	});
+	it("cancels a replacement vote when a frozen voter reconnects", async function () {
+		const { runtime, url } = await start();
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const group = [await connect(url, roomId, "A"), await connect(url, roomId, "B"), await connect(url, roomId, "C")];
+		for (const client of group) { await synced(group); await act(client, { kind: "ready", ready: true }); }
+		await waitFor(() => group.every(client => Boolean(client.state!.game)));
+		const spectator = await connect(url, roomId, "Katsoja");
+		await synced([...group, spectator]);
+		const voter = group[0]!; const absent = group[2]!; const seatId = absent.state!.game!.seats.find(seat => seat.personId === absent.state!.me)!.id;
+		const voterToken = voter.token;
+		absent.socket.disconnect();
+		await waitFor(() => !spectator.state!.members.find(member => member.id === absent.state!.me)!.online);
+		expect((await act(spectator, { kind: "request-seat", seatId })).ok).toBe(true);
+		await waitFor(() => spectator.state!.vote !== null);
+		voter.socket.disconnect();
+		await waitFor(() => spectator.state!.vote === null);
+		const reconnecting = await connect(url, roomId, "A", voterToken);
+		await synced([reconnecting, spectator]);
+		expect((await act(spectator, { kind: "request-seat", seatId })).ok).toBe(true);
+		expect(spectator.state!.vote).not.toBeNull();
+	});
 	it("normalizes whitespace and case for exact-name seat recovery", async function () {
 		const { runtime, url } = await start();
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
