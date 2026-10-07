@@ -50,16 +50,18 @@ function avatarVariant(name: string): "round" | "square" | "oval" | "diamond" | 
 }
 function Avatar({ name }: { name: string }): ReactElement {
 	const variant = avatarVariant(name);
-	const expressions = {
-		round: { eyes: "• •", mouth: "⌣" },
-		square: { eyes: "◉ ◉", mouth: "⌢" },
-		oval: { eyes: "• •", mouth: "◡" },
-		diamond: { eyes: "◌ ◌", mouth: "⌣" },
-		hex: { eyes: "• •", mouth: "◠" },
-		triangle: { eyes: "◦ ◦", mouth: "◡" },
+	const smiles = {
+		round: "M5 6Q15 16 25 6",
+		square: "M4 7Q15 18 26 7",
+		oval: "M6 5Q15 15 24 5",
+		diamond: "M4 8Q15 19 26 8",
+		hex: "M5 6Q15 13 25 6",
+		triangle: "M6 9Q15 19 24 9",
 	} as const;
-	const expression = expressions[variant];
-	return <span className={`avatar avatar--${variant}`} style={{ backgroundColor: avatarColor(name) }} aria-hidden="true"><span className="avatar__eyes">{expression.eyes}</span><span className="avatar__mouth">{expression.mouth}</span></span>;
+	return <span className={`avatar avatar--${variant}`} style={{ backgroundColor: avatarColor(name) }} aria-hidden="true">
+		<span className="avatar__eyes"><span className="avatar__eye avatar__eye--left" /><span className="avatar__eye avatar__eye--right" /></span>
+		<span className="avatar__mouth"><svg viewBox="0 0 30 20" aria-hidden="true"><path d={smiles[variant]} /></svg></span>
+	</span>;
 }
 function ResponseIcon({ kind }: { kind: "believe" | "disbelieve" | "forward" }): ReactElement {
 	return <svg className="response-icon" viewBox="0 0 24 24" aria-hidden="true">
