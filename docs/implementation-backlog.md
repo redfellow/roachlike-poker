@@ -60,11 +60,11 @@ Review gate: real invite-to-first-turn flow in multiple Chrome sessions.
 
 Dependency: B2 projections and B4; static layout can be reviewed earlier.
 
-- [ ] B5.1 Desktop and portrait-mobile layouts. **Check:** six opponent/player panels, public displays/counts, visible path/claims, readable names, and tap targets at agreed viewport sizes.
-- [ ] B5.2 Private grouped hand and card → target → claim → Send interaction. **Check:** edit locally until commit; no selection or grouping leaks through payloads or opponent UI.
-- [ ] B5.3 Uskon / En usko / peek-pass controls and explanation text. **Check:** legal choices only, private peek, final receiver forced to answer, no auto-response timer.
-- [ ] B5.4 Original dark/gross creature art, restrained retro effects, resolution sounds, next-player banner. **Check:** correct personal/neutral sound, one reveal per revision, muted/reduced-motion use, no extra response wait.
-- [ ] B5.5 Finnish rules and dismissible first-turn guidance. **Check:** checkbox defaults on, persists per device, guidance never pauses others or reveals private choices.
+- [x] B5.1 Desktop and portrait-mobile layouts. **Check:** six opponent/player panels, public displays/counts, visible path/claims, readable names, and tap targets at agreed viewport sizes.
+- [x] B5.2 Private grouped hand and card → target → claim → Send interaction. **Check:** edit locally until commit; no selection or grouping leaks through payloads or opponent UI.
+- [x] B5.3 Uskon / En usko / peek-pass controls and explanation text. **Check:** legal choices only, private peek, final receiver forced to answer, no auto-response timer.
+- [x] B5.4 Original dark/gross creature art, restrained retro effects, resolution sounds, next-player banner. **Check:** correct personal/neutral sound, one reveal per revision, muted/reduced-motion use, no extra response wait.
+- [x] B5.5 Finnish rules and dismissible first-turn guidance. **Check:** checkbox defaults on, persists per device, guidance never pauses others or reveals private choices.
 
 Review gate: full 2- and 6-player games usable in desktop Chrome at desktop and portrait-phone viewport sizes with an external call. Physical phone testing is deferred.
 
@@ -97,11 +97,11 @@ Review gate: compare a scripted match's recap and every award against its actual
 
 Dependency: behavior interview, B2, B3, B4, and B5. Scope and proposed review slices: [computer-players.md](computer-players.md).
 
-- [ ] B7C.1 Complete the behavior interview and define concrete acceptance cases.
-- [ ] B7C.2 Add computer identities and agreed lobby/seat controls; verify player limits and readiness.
-- [ ] B7C.3 Implement policies using only each computer's legally available information; verify legal choices and fair knowledge boundaries.
-- [ ] B7C.4 Integrate scheduled actions, persistence, and agreed solo-test controls; verify exactly-once behavior across restart and seat changes.
-- [ ] B7C.5 Complete solo browser games at 2, 3, and 6 seats, including recap/rematch and recovery.
+- [x] B7C.1 Complete the behavior interview and define concrete acceptance cases.
+- [x] B7C.2 Add computer identities and agreed lobby/seat controls; verify player limits and readiness.
+- [x] B7C.3 Implement policies using only each computer's legally available information; verify legal choices and fair knowledge boundaries.
+- [x] B7C.4 Integrate scheduled actions, persistence, and agreed solo-test controls; verify exactly-once behavior across restart and seat changes.
+- [x] B7C.5 Complete solo browser games at 2, 3, and 6 seats, including recap/rematch and recovery.
 
 ## B8 — Windows Deployment and Gameplay Acceptance
 
