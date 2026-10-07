@@ -389,6 +389,19 @@ describe("departure and history integration", function () {
 		expect(restored.state!.game!.seats.find(seat => seat.id === seatId)!.personId).toBe(restored.state!.me);
 		expect(spectator.state!.game!.hand).toEqual([]);
 	});
+	it("normalizes whitespace and case for exact-name seat recovery", async function () {
+		const { runtime, url } = await start();
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const original = await connect(url, roomId, "A");
+		const spectator = await connect(url, roomId, "Katsoja");
+		await synced([original, spectator]);
+		original.socket.disconnect();
+		await waitFor(() => !spectator.state!.members.find(member => member.id === original.state!.me)!.online);
+		const restored = await connect(url, roomId, "  a  ");
+		await waitFor(() => restored.state!.members.find(member => member.id === original.state!.me)!.online === true);
+		expect(restored.state!.members.find(member => member.id === original.state!.me)!.name).toBe("A");
+		expect(restored.state!.members.find(member => member.id === original.state!.me)!.id).toBe(original.state!.me);
+	});
 	it("preserves an under-capacity seat, ends without a loser, and retains history after rematch", async function () {
 		const { runtime, url } = await start();
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
