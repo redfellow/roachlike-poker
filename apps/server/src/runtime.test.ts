@@ -185,6 +185,28 @@ describe("authoritative room transport", function () {
 		expect(host.state!.game!.lastResolution).toBeNull();
 		await waitFor(() => host.state!.game!.lastResolution !== null);
 	});
+	it("resumes one pending computer response after a server restart", async function () {
+		const dir = mkdtempSync(join(tmpdir(), "torakka-bot-restart-")); paths.push(dir);
+		const path = join(dir, "game.sqlite");
+		const first = await start(path, { countdownMs: 0, computerDelayMs: 5000, random: function () { return 0; } });
+		const roomId = (await first.runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(first.url, roomId, "A");
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		const game = host.state!.game!;
+		const computer = game.seats.find(seat => seat.personId !== host.state!.me)!;
+		const card = game.hand[0]!;
+		expect((await act(host, { kind: "game", action: { type: "send", cardId: card.id, targetId: computer.id, creature: card.creature } })).ok).toBe(true);
+		const token = host.token;
+		host.socket.disconnect();
+		await first.runtime.close(); runtimes.splice(runtimes.indexOf(first.runtime), 1);
+		const second = await start(path, { countdownMs: 0, computerDelayMs: 0 });
+		const restored = await connect(second.url, roomId, "A", token);
+		await waitFor(() => restored.state!.game!.lastResolution !== null);
+		expect(restored.state!.game!.lastResolution!.id).toBe(`${game.id}:r1`);
+		expect(restored.state!.history).toHaveLength(restored.state!.game!.phase === "ended" ? 1 : 0);
+	});
 	it("marks seated computer players ready after a rematch", async function () {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
@@ -199,6 +221,45 @@ describe("authoritative room transport", function () {
 		expect(computers).toHaveLength(2);
 		expect(computers.every(member => member.ready)).toBe(true);
 		expect(host.state!.members.find(member => member.id === host.state!.me)!.ready).toBe(false);
+	});
+	it.each([2, 3, 6])("completes a solo %i-seat game with fair computer turns", async function (seatCount) {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 0 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "Yksinpelaaja");
+		for (let index = 1; index < seatCount; index++) { expect((await act(host, { kind: "add-computer" })).ok).toBe(true); }
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		for (let step = 0; step < 1000 && host.state!.game!.phase !== "ended"; step++) {
+			await waitFor(function () {
+				const current = host.state!.game!;
+				if (current.phase === "ended") { return true; }
+				const seatId = current.phase === "initiation" ? current.activeSeatId : current.challenge!.claims.at(-1)!.receiverId;
+				return current.seats.find(seat => seat.id === seatId)!.personId === host.state!.me;
+			});
+			const current = host.state!.game!;
+			if (current.phase === "ended") { break; }
+			if (current.phase === "initiation") {
+				const ownSeat = current.seats.find(seat => seat.personId === host.state!.me)!;
+				const target = current.seats.find(seat => seat.id !== ownSeat.id && !seat.removed)!;
+				const card = current.hand[0]!;
+				await act(host, { kind: "game", action: { type: "send", cardId: card.id, targetId: target.id, creature: card.creature } });
+			}
+			else if (current.phase === "response") {
+				await act(host, { kind: "game", action: { type: "answer", believes: step % 2 === 0 } });
+			}
+			else {
+				const target = current.challenge!.eligibleTargets[0]!;
+				await act(host, { kind: "game", action: { type: "pass", targetId: target, creature: current.challenge!.card!.creature } });
+			}
+			await new Promise(function (done) { setTimeout(done, 2); });
+		}
+		expect(host.state!.game!.phase).toBe("ended");
+		expect(host.state!.history).toHaveLength(1);
+		expect(host.state!.history[0]!.scores).toHaveLength(seatCount);
+		if (seatCount > 2) {
+			expect(host.state!.history[0]!.scores.some(score => score.submitted > 0)).toBe(true);
+			expect(host.state!.history[0]!.resolutions.some(resolution => resolution.claims.length > 1)).toBe(true);
+		}
 	});
 	it("allows the host to remove another player from the lobby", async function () {
 		const { runtime, url } = await start();
@@ -308,6 +369,25 @@ describe("departure and history integration", function () {
 		expect(spectator.state!.game!.hand).toEqual(oldHand);
 		expect(spectator.state!.vote).toBeNull();
 		expect(spectator.state!.game!.scores.find(s => s.personId === spectator.state!.me)!.correct).toBe(0);
+	});
+	it("cancels a replacement vote when the original player reconnects", async function () {
+		const { runtime, url } = await start();
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const group = [await connect(url, roomId, "A"), await connect(url, roomId, "B"), await connect(url, roomId, "C")];
+		for (const client of group) { await synced(group); await act(client, { kind: "ready", ready: true }); }
+		await waitFor(() => group.every(client => Boolean(client.state!.game)));
+		const spectator = await connect(url, roomId, "Katsoja");
+		await synced([...group, spectator]);
+		const absent = group[2]!; const token = absent.token;
+		const seatId = absent.state!.game!.seats.find(seat => seat.personId === absent.state!.me)!.id;
+		absent.socket.disconnect();
+		await waitFor(() => spectator.state!.members.find(member => member.id === absent.state!.me)!.online === false);
+		expect((await act(spectator, { kind: "request-seat", seatId })).ok).toBe(true);
+		await waitFor(() => spectator.state!.vote !== null);
+		const restored = await connect(url, roomId, "C", token);
+		await waitFor(() => spectator.state!.vote === null);
+		expect(restored.state!.game!.seats.find(seat => seat.id === seatId)!.personId).toBe(restored.state!.me);
+		expect(spectator.state!.game!.hand).toEqual([]);
 	});
 	it("preserves an under-capacity seat, ends without a loser, and retains history after rematch", async function () {
 		const { runtime, url } = await start();

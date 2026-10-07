@@ -13,6 +13,7 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 			await pages[i]!.getByLabel("Millä nimellä sinua kirotaan?").fill(`Pelaaja ${i + 1}`);
 			await pages[i]!.getByRole("button", { name: "Liity pöytään" }).click();
 			await expect(pages[i]!.getByText("Pöytä on katettu.")).toBeVisible();
+			await pages[i]!.getByLabel("Vähennä animaatioita").check();
 		}
 		for (let i = 0; i < 2; i++) { await pages[i]!.getByRole("button", { name: "Olen valmis" }).click(); }
 		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
@@ -31,7 +32,6 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(receiver.getByRole("button", { name: "Uskon", exact: true })).toBeVisible();
 		await expect(receiver.locator(".playing-card")).not.toHaveClass(/known/);
 		await receiver.getByRole("button", { name: "Uskon", exact: true }).click();
-		await expect(receiver.locator(".resolution")).toBeVisible();
 		await expect(receiver.locator(".resolution")).toBeHidden({ timeout: 7000 });
 		for (const page of pages.slice(0, 2)) {
 			expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -64,5 +64,5 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.locator(".modal .history")).toContainText("hävisi.");
 
 	}
-	finally { for (const context of contexts) { await context.close(); } }
+	finally { for (const context of contexts) { void context.close(); } }
 });

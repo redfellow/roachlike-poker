@@ -4,7 +4,7 @@ import { Server, type Socket } from "socket.io";
 import { randomInt, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { applyAction, chooseComputerAction, createMatch, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap } from "@torakka/game";
+import { applyAction, chooseComputerAction, chooseComputerPrediction, createMatch, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap } from "@torakka/game";
 import { commandSchema, joinSchema, type Command, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
 import { Store } from "./store";
 
@@ -93,18 +93,28 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		const seatId = requiredSeat(room.game);
 		const seat = room.game.seats.find(candidate => candidate.id === seatId && !candidate.removed);
 		const member = room.members.find(candidate => candidate.id === seat?.personId);
-		if (!seat || !member?.computer) { return; }
+		const predictionAvailable = room.members.some(candidate => candidate.computer && chooseComputerPrediction(room.game!, candidate.id));
+		if ((!seat || !member?.computer) && !predictionAvailable) { return; }
 		const timer = setTimeout(function () {
 			computerTimers.delete(room.id);
 			const original = rooms.get(room.id);
 			if (!original?.game || original.game.phase === "ended") { return; }
-			const nextSeatId = requiredSeat(original.game);
-			const nextSeat = original.game.seats.find(candidate => candidate.id === nextSeatId && !candidate.removed);
-			const nextMember = original.members.find(candidate => candidate.id === nextSeat?.personId);
-			if (!nextSeat || !nextMember?.computer) { return; }
 			const next = structuredClone(original);
 			const previous = promptKey(next.game);
-			next.game = applyAction(next.game!, nextSeat.id, chooseComputerAction(next.game!, nextMember.id), now());
+			let changed = false;
+			for (const candidate of next.members.filter(item => item.computer)) {
+				const prediction = chooseComputerPrediction(next.game!, candidate.id);
+				const predictionSeat = next.game!.seats.find(item => item.personId === candidate.id && !item.removed);
+				if (prediction && predictionSeat) { next.game = applyAction(next.game!, predictionSeat.id, prediction, now()); changed = true; }
+			}
+			const nextSeatId = requiredSeat(next.game!);
+			const nextSeat = next.game!.seats.find(candidate => candidate.id === nextSeatId && !candidate.removed);
+			const nextMember = next.members.find(candidate => candidate.id === nextSeat?.personId);
+			if (nextSeat && nextMember?.computer) {
+				next.game = applyAction(next.game!, nextSeat.id, chooseComputerAction(next.game!, nextMember.id), now());
+				changed = true;
+			}
+			if (!changed) { return; }
 			updatePrompt(next, previous); rememberEnd(next); save(next); broadcast(next); scheduleComputerTurn(next);
 		}, computerDelayMs);
 		computerTimers.set(room.id, timer);
