@@ -8,11 +8,11 @@ Each numbered task is a separately reviewable increment. Finish its acceptance c
 
 Dependency: none. Review gate: worked examples approved before affected implementation.
 
-Review artifact: [rules-contract.md](rules-contract.md), containing phases, command permissions, privacy, departure semantics, and 28 worked acceptance scenarios. Draft prepared; open house-rule policies remain explicitly proposed. Checkboxes remain open until review is complete.
+Review artifact: [rules-contract.md](rules-contract.md), containing phases, command permissions, privacy, departure semantics, and 28 worked acceptance scenarios. The rules-contract is approved; only implementation-linked test coverage remains incomplete.
 
-- [ ] B0.1 Specify every phase, command, legal actor, visible information, and transition. **Check:** walk through direct truth/lie calls, repeated passes, forced call, empty hand, and matching-card defeat in both player-count modes.
-- [ ] B0.2 Resolve departure/replacement defaults listed below. **Check:** trace card ownership and next actor for removal during initiation, response, peek, and resolution; preserve all 64 cards across active, removed, and retired zones.
-- [ ] B0.3 Define person-versus-seat attribution and prediction/achievement examples. **Check:** a replacement inherits obligations but neither steals old achievements nor retroactively changes a prediction.
+- [x] B0.1 Specify every phase, command, legal actor, visible information, and transition. **Check:** walk through direct truth/lie calls, repeated passes, forced call, empty hand, and matching-card defeat in both player-count modes.
+- [x] B0.2 Resolve departure/replacement defaults. **Check:** trace card ownership and next actor for removal during initiation, response, peek, and resolution; preserve all 64 cards across active, removed, and retired zones.
+- [x] B0.3 Define person-versus-seat attribution and prediction/achievement examples. **Check:** a replacement inherits obligations but neither steals old achievements nor retroactively changes a prediction.
 
 ## B1 — Project Foundation
 
@@ -122,18 +122,18 @@ Dependency: B8 acceptance and clarified media requirements.
 - [ ] B9.3 Replace avatars with persistent face panels, emphasizing sender/receiver. **Check:** all faces remain visible without obscuring private hand or public table, including portrait mobile.
 - [ ] B9.4 Integrate reconnection, audio controls, and media-triggered pause. **Check:** muting microphone or disabling camera pauses game actions; exercise the agreed resume policy, six-way play, network switches, echo/feedback, and media failure without lost state. Voice activation is optional later work.
 
-## Proposed Defaults Needing Rule Review
+## Confirmed Defaults
 
-These are recommendations, not confirmed decisions. Resolve before dependent tasks.
+These decisions are now approved and implemented in the rules contract and runtime behavior.
 
-1. Normalize surrounding whitespace and Unicode in names; preserve case for exact-name reclaim. Reject case-only duplicate display names to avoid ambiguous seats.
-2. Snapshot connected seated voters excluding the affected seat and requester; require more than half. Cancel/restart a vote on voter membership changes rather than silently altering its threshold. No eligible voters means no approved takeover.
-3. Process voluntary replacement at the current phase, preserving state. Only permanent removal cancels an affected challenge. If a removed player was an earlier sender and no longer has an action/liability, finish that challenge before redistributing.
-4. Choose redistribution remainder recipients randomly. For recovery initiation, first restrict to players with cards, then apply risk exclusion; if all candidates tie, choose among them. If none has cards, end without a loser rather than inventing a recovery victim. Preserve an unaffected scheduled initiator unless a cancellation requires a new one.
-5. Preserve knowledge by person as well as seat. A removed person who already saw the active card must not gain a fresh unseen receiver/prediction opportunity through another seat. Restrict takeover until resolution when necessary.
-6. No predictions revealed or scored for cancelled challenges, even though their card is visibly retired. No achievement progress from cancellation.
-7. Cancel ready countdowns and replacement votes after server restart; retain game phase. Start required-action AFK timing anew after a prompt is delivered to a connected controller.
-8. Recap shows a small highlight selection with the full award list expandable. Accuracy uses submitted, scored predictions only. Display actual counts alongside exaggerated achievement copy.
+1. Names are normalized by trimming surrounding whitespace and Unicode normalization; preserve the original case in the UI while comparing normalized names. Reject display names that differ only by case.
+2. Replacement votes snapshot the eligible connected seated voters at the time the request is created. The vote requires $\lfloor n/2 \rfloor + 1$ approvals, excluding the requester and affected seat. A membership change cancels the request rather than silently changing its threshold.
+3. Voluntary replacement preserves the current phase and object state. Permanent removal cancels only an affected active challenge; otherwise the removal waits until resolution.
+4. Redistribution recipients are chosen randomly from remaining seats with cards. Risk-based selection is used only for choosing the next initiator when the current starter is removed or cancelled.
+5. Knowledge is preserved by person as well as seat. A person who has seen the active card cannot gain a fresh unseen receiver or prediction opportunity through another seat until the challenge resolves.
+6. Cancelled challenges produce no prediction points, reveal no private predictions, and do not contribute to achievement progress.
+7. Server restarts cancel unfinished countdowns and votes, preserve the game phase and obligations, and restart AFK timing when a required prompt is delivered anew.
+8. Recaps show factual counts and award reasons, while the achievement list remains expandable.
 
 ## Operational Questions
 
