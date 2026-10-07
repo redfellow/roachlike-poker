@@ -420,7 +420,7 @@ describe("departure and history integration", function () {
 		await new Promise<void>(function (resolve) { guest.on("connect", resolve); });
 		const reply = await guest.emitWithAck("join", { roomId, name: "a", token: undefined }) as Reply;
 		expect(reply.ok).toBe(false);
-		expect(reply.error).toBe("Nimi on jo käytössä.");
+		if (!reply.ok) { expect(reply.error).toBe("Nimi on jo käytössä."); }
 		guest.disconnect();
 	});
 	it("normalizes whitespace and case for exact-name seat recovery", async function () {
