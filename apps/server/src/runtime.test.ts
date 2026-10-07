@@ -410,6 +410,19 @@ describe("departure and history integration", function () {
 		expect((await act(spectator, { kind: "request-seat", seatId })).ok).toBe(true);
 		expect(spectator.state!.vote).not.toBeNull();
 	});
+	it("rejects duplicate display names that differ only by case", async function () {
+		const { runtime, url } = await start();
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const original = await connect(url, roomId, "A");
+		await synced([original]);
+		const guest = io(url, { transports: ["websocket"], reconnection: false });
+		clients.push({ socket: guest, state: null, token: "", receipts: new Set() });
+		await new Promise<void>(function (resolve) { guest.on("connect", resolve); });
+		const reply = await guest.emitWithAck("join", { roomId, name: "a", token: undefined }) as Reply;
+		expect(reply.ok).toBe(false);
+		expect(reply.error).toBe("Nimi on jo käytössä.");
+		guest.disconnect();
+	});
 	it("normalizes whitespace and case for exact-name seat recovery", async function () {
 		const { runtime, url } = await start();
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
