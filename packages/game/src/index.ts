@@ -35,7 +35,7 @@ export interface GameView {
 	retired: Card[]; scores: Score[];
 }
 export interface Score { personId: string; name: string; correct: number; submitted: number; answersCorrect: number; answersSubmitted: number; bluffCallsCorrect: number; bluffCallsWrong: number; bluffs: number; bluffsCaught: number; catches: number }
-export interface Award { key: string; title: string; copy: string; personIds: string[] }
+export interface Award { key: string; personIds: string[] }
 export interface Recap { id: string; startedAt: number; endedAt: number | null; loserName: string | null; reason: Match["endReason"]; scores: Score[]; awards: Award[]; resolutions: Resolution[] }
 export class GameError extends Error {
 	constructor(message: string) { super(message); this.name = "GameError"; }
@@ -102,20 +102,42 @@ function publicCoinFlip(value: string): boolean {
 	}
 	return (hash & 1) === 0;
 }
+function alternateCreature(creature: Creature, value: string): Creature {
+	const offset = publicCoinFlip(value) ? 1 : 3;
+	return CREATURES[(CREATURES.indexOf(creature) + offset) % CREATURES.length]!;
+}
+export function chooseComputerPrediction(match: Match, personId: string): Extract<GameAction, { type: "predict" }> | null {
+	const view = projectMatch(match, personId);
+	if (!match.challenge || !view.challenge?.canPredict || view.challenge.prediction !== null) { return null; }
+	const claimIndex = match.challenge.claims.length - 1;
+	const claim = lastClaim(match.challenge);
+	return {
+		type: "predict",
+		challengeId: match.challenge.id,
+		claimIndex,
+		believes: publicCoinFlip(`prediction:${match.challenge.id}:${claimIndex}:${personId}:${claim.creature}`)
+	};
+}
 export function chooseComputerAction(match: Match, personId: string): GameAction {
 	const seat = match.seats.find(s => s.personId === personId && !s.removed);
 	requireCondition(seat, "Tietokonepelaajaa ei löytynyt.");
-	if (match.phase === "initiation") { return { type: "send", cardId: selectCard(seat).id, targetId: selectTarget(match, seat), creature: selectCard(seat).creature }; }
+	if (match.phase === "initiation") {
+		const card = selectCard(seat);
+		const truthful = publicCoinFlip(`claim:${match.id}:${match.nextChallenge}:${seat.id}:${card.id}`);
+		return { type: "send", cardId: card.id, targetId: selectTarget(match, seat), creature: truthful ? card.creature : alternateCreature(card.creature, card.id) };
+	}
 	requireCondition(match.challenge, "Tietokone ei voi valita toimintoa ilman väitettä.");
 	const claim = lastClaim(match.challenge);
 	if (match.phase === "response") {
 		requireCondition(seat.id === claim.receiverId, "Tietokone ei ole kortin vastaanottaja.");
+		if (eligibleTargets(match).length > 0 && publicCoinFlip(`peek:${match.challenge.id}:${match.challenge.claims.length}:${seat.id}`)) { return { type: "peek" }; }
 		return { type: "answer", believes: publicCoinFlip(`${match.challenge.id}:${match.challenge.claims.length}:${seat.id}:${claim.creature}`) };
 	}
 	const target = [...eligibleTargets(match)].sort(function (a, b) {
 		return match.seats.find(s => s.id === a)!.hand.length - match.seats.find(s => s.id === b)!.hand.length || a.localeCompare(b);
 	})[0]!;
-	return { type: "pass", targetId: target, creature: selectCard(seat).creature };
+	const truthful = publicCoinFlip(`pass:${match.challenge.id}:${match.challenge.claims.length}:${seat.id}`);
+	return { type: "pass", targetId: target, creature: truthful ? match.challenge.card.creature : alternateCreature(match.challenge.card.creature, `${seat.id}:${target}`) };
 }
 function finish(match: Match, loser: Seat | null, reason: Match["endReason"], now: number): void {
 	match.phase = "ended";
@@ -300,23 +322,24 @@ export function recap(match: Match): Recap {
 export function achievements(match: Match): Award[] {
 	const result: Award[] = [];
 	const stats = scores(match);
-	const leaderboard = function (key: "bluffs" | "catches" | "correct", title: string, copy: string): void {
+	const leaderboard = function (key: "bluffs" | "catches" | "correct"): void {
 		const max = Math.max(0, ...stats.map(s => s[key]));
-		if (max > 0) { result.push({ key, title, copy, personIds: stats.filter(s => s[key] === max).map(s => s.personId) }); }
+		if (max > 0) { result.push({ key, personIds: stats.filter(s => s[key] === max).map(s => s.personId) }); }
 	};
-	leaderboard("bluffs", "Paskapuheen tohtori", "Väitöskirja oli paskaa. Kaikki taputtivat.");
-	leaderboard("catches", "Paskatutka", "Haistaa kusetuksen oman ripulinkin läpi.");
-	leaderboard("correct", "Oraakkeli peräsuolesta", "Ennustukset tulivat perseestä. Silti oikein.");
+	leaderboard("bluffs");
+	leaderboard("catches");
+	leaderboard("correct");
 	const completed = match.resolutions.filter(r => !r.cancelled);
-	const add = function (key: string, title: string, copy: string, ids: string[]): void {
+	const add = function (key: string, ids: string[]): void {
 		if (!ids.length) { return; }
 		const existing = result.find(a => a.key === key);
 		if (existing) { existing.personIds = [...new Set([...existing.personIds, ...ids])]; }
-		else { result.push({ key, title, copy, personIds: [...new Set(ids)] }); }
+		else { result.push({ key, personIds: [...new Set(ids)] }); }
 	};
 	const longest = Math.max(0, ...completed.map(r => r.claims.length));
 	if (longest > 1) {
-		add("chain", "Saatanan kiertopalkinto", "Kävi kaikilla. Jäi yhden riesaksi.", completed.filter(r => r.claims.length === longest).flatMap(r => [...r.claims.map(c => c.senderPersonId), r.receiverPersonId]));
+		const winners = completed.filter(r => r.claims.length === longest).map(r => r.receiverPersonId);
+		add("chain", winners);
 	}
 	const pairStreak = new Map<string, number>();
 	const paranoid = new Map<string, number>();
@@ -328,28 +351,27 @@ export function achievements(match: Match): Award[] {
 		const lie = c.creature !== r.card.creature;
 		const pair = `${c.senderPersonId}:${r.receiverPersonId}`;
 		pairStreak.set(pair, lie && r.receiverBelieves ? (pairStreak.get(pair) ?? 0) + 1 : 0);
-		if ((pairStreak.get(pair) ?? 0) >= 2) { add("twice", "Kuiva kakkonen", "Sama kusetus. Sama uhri. Ei liukuvoidetta.", [c.senderPersonId]); }
+		if ((pairStreak.get(pair) ?? 0) >= 2) { add("twice", [c.senderPersonId]); }
 		if (lie && r.receiverBelieves && c.predictions.length >= 2 && c.predictions.every(p => p.believes)) {
-			add("crowd", "Joukkokusetus", "Koko pöytä söi paskaa ja pyysi reseptin.", [c.senderPersonId]);
+			add("crowd", [c.senderPersonId]);
 		}
 		if (!lie && !r.receiverBelieves) {
 			paranoid.set(r.receiverPersonId, (paranoid.get(r.receiverPersonId) ?? 0) + 1);
 			truth.set(c.senderPersonId, (truth.get(c.senderPersonId) ?? 0) + 1);
 		}
 		if (r.ended && lie && match.endReason === "matching") {
-			add(r.receiverBelieves ? "undertaker" : "own-grave", r.receiverBelieves ? "Hautausurakoitsija" : "Oma kusetus, oma kuoppa",
-				r.receiverBelieves ? "Toimitus perille. Asiakas kylmänä." : "Kaivoit kuopan. Hyppäsit itse.", [c.senderPersonId]);
+			add(r.receiverBelieves ? "undertaker" : "own-grave", [c.senderPersonId]);
 		}
 		const counts = displayCounts.get(r.penaltySeatId) ?? {};
 		counts[r.card.creature] = (counts[r.card.creature] ?? 0) + 1;
 		displayCounts.set(r.penaltySeatId, counts);
 		if (counts[r.card.creature] === match.threshold - 1 && !dangerAt.has(r.penaltySeatId)) { dangerAt.set(r.penaltySeatId, { personId: r.penaltyPersonId, index }); }
 	});
-	add("paranoid", "Vainoharhainen mulkku", "Kukaan ei valehdellut. Sekös epäilytti.", [...paranoid].filter(([, n]) => n >= 3).map(([id]) => id));
-	add("truth", "Totuus sattuu, saatana", "Kerrankin puhuit totta. Kaveri maksoi siitä.", [...truth].filter(([, n]) => n >= 3).map(([id]) => id));
+	add("paranoid", [...paranoid].filter(([, n]) => n >= 3).map(([id]) => id));
+	add("truth", [...truth].filter(([, n]) => n >= 3).map(([id]) => id));
 	if (match.phase === "ended" && match.loserSeatId) {
-		add("grave", "Hautapaikka varattu", "Arkkuun sai jo kaivertaa nimen.", [...dangerAt].filter(([seatId, entry]) => seatId !== match.loserSeatId && completed.length - 1 - entry.index >= 3 && match.seats.some(s => s.id === seatId && !s.removed && s.personId === entry.personId)).map(([, entry]) => entry.personId));
-		if (match.endReason === "empty") { add("empty", "Tyhjä käsi, kylmä perse", "Eväät loppuivat ennen selityksiä.", [match.seats.find(s => s.id === match.loserSeatId)!.personId]); }
+		add("grave", [...dangerAt].filter(([seatId, entry]) => seatId !== match.loserSeatId && completed.length - 1 - entry.index >= 3 && match.seats.some(s => s.id === seatId && !s.removed && s.personId === entry.personId)).map(([, entry]) => entry.personId));
+		if (match.endReason === "empty") { add("empty", [match.seats.find(s => s.id === match.loserSeatId)!.personId]); }
 	}
 	return result;
 }
