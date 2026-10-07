@@ -36,8 +36,30 @@ function avatarColor(name: string): string {
 	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
 	return `hsl(${Math.abs(hash) % 360} 27% 58%)`;
 }
+function avatarVariant(name: string): "round" | "square" | "oval" | "diamond" | "hex" | "triangle" {
+	let hash = 0;
+	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
+	switch (Math.abs(hash) % 6) {
+		case 0: return "round";
+		case 1: return "square";
+		case 2: return "oval";
+		case 3: return "diamond";
+		case 4: return "hex";
+		default: return "triangle";
+	}
+}
 function Avatar({ name }: { name: string }): ReactElement {
-	return <span className="avatar" style={{ backgroundColor: avatarColor(name) }} aria-hidden="true"><span className="avatar__eyes">• •</span><span className="avatar__mouth">⌣</span></span>;
+	const variant = avatarVariant(name);
+	const expressions = {
+		round: { eyes: "• •", mouth: "⌣" },
+		square: { eyes: "◉ ◉", mouth: "⌢" },
+		oval: { eyes: "• •", mouth: "◡" },
+		diamond: { eyes: "◌ ◌", mouth: "⌣" },
+		hex: { eyes: "• •", mouth: "◠" },
+		triangle: { eyes: "◦ ◦", mouth: "◡" },
+	} as const;
+	const expression = expressions[variant];
+	return <span className={`avatar avatar--${variant}`} style={{ backgroundColor: avatarColor(name) }} aria-hidden="true"><span className="avatar__eyes">{expression.eyes}</span><span className="avatar__mouth">{expression.mouth}</span></span>;
 }
 function ResponseIcon({ kind }: { kind: "believe" | "disbelieve" | "forward" }): ReactElement {
 	return <svg className="response-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -78,8 +100,25 @@ function App(): ReactElement {
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules /></Modal>}</div>;
 }
 function Modal({ close, children }: { close: () => void; children: React.ReactNode }): ReactElement {
-	useEffect(function () { function onKey(e: KeyboardEvent): void { if (e.key === "Escape") { close(); } } window.addEventListener("keydown", onKey); return function () { window.removeEventListener("keydown", onKey); }; }, [close]);
-	return <div className="modal-backdrop" onClick={close}><section className="modal" role="dialog" aria-modal="true" aria-label={FI.common.dialogLabel} onClick={e => e.stopPropagation()}><button className="button button--quiet modal__close" onClick={close} aria-label={FI.common.close}>✕</button>{children}</section></div>;
+	const dialog = useRef<HTMLElement | null>(null);
+	const closeRef = useRef(close);
+	closeRef.current = close;
+	useEffect(function () {
+		const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		dialog.current?.querySelector<HTMLElement>("button, a, input, select, [tabindex]:not([tabindex='-1'])")?.focus();
+		function onKey(event: KeyboardEvent): void {
+			if (event.key === "Escape") { closeRef.current(); return; }
+			if (event.key !== "Tab" || !dialog.current) { return; }
+			const controls = [...dialog.current.querySelectorAll<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), [tabindex]:not([tabindex='-1'])")];
+			if (!controls.length) { event.preventDefault(); return; }
+			const first = controls[0]!; const last = controls.at(-1)!;
+			if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+			else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+		}
+		window.addEventListener("keydown", onKey);
+		return function () { window.removeEventListener("keydown", onKey); previousFocus?.focus(); };
+	}, []);
+	return <div className="modal-backdrop" onClick={close}><section ref={dialog} className="modal" role="dialog" aria-modal="true" aria-label={FI.common.dialogLabel} onClick={e => e.stopPropagation()}><button className="button button--quiet modal__close" onClick={close} aria-label={FI.common.close}>✕</button>{children}</section></div>;
 }
 function Session({ roomId, name }: { roomId: string; name: string }): ReactElement {
 	const socketRef = useRef<Socket | null>(null);
@@ -172,13 +211,13 @@ function Session({ roomId, name }: { roomId: string; name: string }): ReactEleme
 			{!game && <button className="text-button text-button--danger" disabled={busy || !connected} onClick={function () { if (confirm(FI.lobby.leaveConfirm)) { void command({ kind: "leave-table" }); } }}>{FI.lobby.leaveTable}</button>}
 			{state.countdownAt !== null && <div className="countdown" role="status"><strong>{Math.max(1, Math.ceil((state.countdownAt - time) / 1000))}</strong><span>{FI.lobby.countdown}</span></div>}
 			<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar name={m.name} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
-		</section><aside className="lobby__aside"><div className="mini-card"><CreatureArt creature="lude" /><p>{FI.lobby.quote}</p></div><h3>{FI.common.settings}</h3><label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} guided={guided} time={time} />}
+		</section><aside className="lobby__aside"><div className="mini-card"><CreatureArt creature="lude" /><p>{FI.lobby.quote}</p></div><h3>{FI.common.settings}</h3><label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}
 		<footer className="app__footer"><span aria-live="polite">{state.notice}</span>{host && !state.game && !state.closed && <button className="button button--danger" disabled={busy || !connected} onClick={function () { if (confirm(FI.lobby.closeConfirm)) { void command({ kind: "close-lobby" }); } }}>{FI.lobby.closeLobby}</button>}<span>{FI.footer}</span></footer>
 		{rules && <Modal close={() => setRules(false)}><Rules /><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label></Modal>}
 		{history && <Modal close={() => setHistory(false)}><History items={state.history} /></Modal>}
 	</div>;
 }
-function Table({ state, command, busy, muted, guided, time }: { state: RoomView; command: (action: RoomAction) => Promise<void>; busy: boolean; muted: boolean; guided: boolean; time: number }): ReactElement {
+function Table({ state, command, busy, muted, reduced, guided, time }: { state: RoomView; command: (action: RoomAction) => Promise<void>; busy: boolean; muted: boolean; reduced: boolean; guided: boolean; time: number }): ReactElement {
 	const game = state.game!;
 	const me = game.seats.find(s => s.personId === state.me && !s.removed);
 	const claim = game.challenge?.claims.at(-1);
@@ -209,24 +248,24 @@ function Table({ state, command, busy, muted, guided, time }: { state: RoomView;
 		const isNewHandoff = Boolean(latestClaim && (old.challengeId !== game.challenge?.id || old.claimCount < (game.challenge?.claims.length ?? 0)));
 		if (isNewHandoff && latestClaim) {
 			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
-			const handoffTimer = setTimeout(() => setHandoff(null), 1250);
+			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(handoffTimer); };
 		}
-		if (old.phase === "response" && game.phase === "passing" && game.challenge?.card && latestClaim?.receiverId === me?.id) {
+		if (old.phase === "response" && game.phase === "passing" && game.challenge?.card) {
 			setPeeking(true);
-			const peekTimer = setTimeout(() => setPeeking(false), 1450);
+			const peekTimer = setTimeout(() => setPeeking(false), reduced ? 40 : 1450);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(peekTimer); };
 		}
 		if (old.activeSeatId !== game.activeSeatId && game.phase === "initiation") {
 			setNextTurnSeat(game.activeSeatId);
-			const turnTimer = setTimeout(() => setNextTurnSeat(null), 1800);
+			const turnTimer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 1800);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(turnTimer); };
 		}
 		previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
-	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id]);
+	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, reduced]);
 	function playVariant(variant: string): void {
 		if (muted) { return; }
 		void playNormalizedAudio(variant, 0.7).catch(function () { return; });
@@ -235,8 +274,6 @@ function Table({ state, command, busy, muted, guided, time }: { state: RoomView;
 		const resolution = game.lastResolution;
 		if (!resolution || seen.current === resolution.id) { return; }
 		seen.current = resolution.id; setResult(true); setAnswerFlash(false);
-		const finalClaim = resolution.claims.at(-1);
-		const involved = resolution.receiverPersonId === state.me || finalClaim?.senderPersonId === state.me;
 		if (!muted && (resolution.penaltyPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me || resolution.receiverPersonId === state.me)) {
 			const isLoss = resolution.penaltyPersonId === state.me;
 			const variants = isLoss ? LOSS_VARIANTS : WIN_VARIANTS;
@@ -244,11 +281,11 @@ function Table({ state, command, busy, muted, guided, time }: { state: RoomView;
 			challengeSoundIndex.current += 1;
 			playVariant(variant);
 		}
-		const resultTimer = setTimeout(() => setResult(false), 2200);
-		const flashStartTimer = setTimeout(() => setAnswerFlash(involved), 2100);
-		const flashEndTimer = setTimeout(() => setAnswerFlash(false), 7800);
+		const resultTimer = setTimeout(() => setResult(false), reduced ? 120 : 2200);
+		const flashStartTimer = setTimeout(() => setAnswerFlash(!reduced), reduced ? 100 : 2100);
+		const flashEndTimer = setTimeout(() => setAnswerFlash(false), reduced ? 120 : 7800);
 		return function () { clearTimeout(resultTimer); clearTimeout(flashStartTimer); clearTimeout(flashEndTimer); };
-	}, [game.lastResolution?.id, muted, state.me]);
+	}, [game.lastResolution?.id, muted, reduced, state.me]);
 	const resolution = game.lastResolution;
 	const personalOutcomePositive = resolution && (resolution.receiverPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me) ? resolution.penaltyPersonId !== state.me : null;
 	const outcome = resolution?.claims.flatMap(c => c.predictions.map(p => p.believes === (c.creature === resolution.card.creature))) ?? [];
@@ -330,21 +367,15 @@ function Actions({ game, meId, command, busy, muted, card, target, setCard, setT
 function RoundDetails({ resolution, names }: { resolution: Resolution; names: Record<string, string> }): ReactElement {
 	return <div className="round-details"><p>Kortti oli <strong>{LABELS[resolution.card.creature]}</strong>. {resolution.cancelled ? FI.round.cancelled : FI.table.takesCard(names[resolution.penaltyPersonId] ?? FI.history.defaultPlayer)}</p>{resolution.claims.map((claim, index) => <div key={index}><strong>{names[claim.senderPersonId]}: {LABELS[claim.creature]}</strong><span> {claim.creature === resolution.card.creature ? FI.round.trueClaim : FI.round.falseClaim}</span>{!resolution.cancelled && <div className="round-details__predictions">{claim.predictions.map(p => <span key={p.personId}>{p.believes === (claim.creature === resolution.card.creature) ? "✓" : "✕"} {names[p.personId]}: {p.believes ? FI.table.believe : FI.table.disbelieve}</span>)}{!claim.predictions.length && <small>{FI.round.noPredictions}</small>}</div>}</div>)}</div>;
 }
+type AchievementText = { title: string; copy: string; reason: string | ((count: number) => string) };
 function achievementReason(key: string, item: Recap, personIds: readonly string[]): string {
 	const selected = item.scores.filter(score => personIds.includes(score.personId));
-	if (key === "bluffs") { return `Eniten läpimenneitä bluffeja: ${Math.max(0, ...selected.map(score => score.bluffs))}.`; }
-	if (key === "catches") { return `Eniten käräytettyjä bluffeja: ${Math.max(0, ...selected.map(score => score.catches))}.`; }
-	if (key === "correct") { return `Eniten oikeita sivustakatsojan arvauksia: ${Math.max(0, ...selected.map(score => score.correct))}.`; }
-	if (key === "chain") { return `Mukana pelin pisimmässä korttiketjussa: ${Math.max(...item.resolutions.map(resolution => resolution.claims.length))} siirtoa.`; }
-	if (key === "twice") { return "Huijasi samaa pelaajaa onnistuneesti vähintään kahdesti peräkkäin."; }
-	if (key === "crowd") { return "Bluffi meni läpi vastaanottajalle ja kaikille vähintään kahdelle arvanneelle pelaajalle."; }
-	if (key === "paranoid") { return "Epäili vähintään kolmea totta väitettä väärin."; }
-	if (key === "truth") { return "Sai vähintään kolme totta väitettä näyttämään valheilta."; }
-	if (key === "undertaker") { return "Syötti läpimenneen bluffin, joka aiheutti vastaanottajan tappion."; }
-	if (key === "own-grave") { return "Jäi kiinni bluffista, joka aiheutti oman tappion."; }
-	if (key === "grave") { return "Kävi yhden kortin päässä tappiosta ja selviytyi vielä vähintään kolme kierrosta."; }
-	if (key === "empty") { return "Hävisi, koska käsi oli tyhjä oman aloitusvuoron alkaessa."; }
-	return "Saavutus myönnettiin tämän ottelun tapahtumien perusteella.";
+	const award = FI.history.awards[key as keyof typeof FI.history.awards] as AchievementText | undefined;
+	if (key === "bluffs") { return typeof award?.reason === "function" ? award.reason(Math.max(0, ...selected.map(score => score.bluffs))) : award?.reason ?? ""; }
+	if (key === "catches") { return typeof award?.reason === "function" ? award.reason(Math.max(0, ...selected.map(score => score.catches))) : award?.reason ?? ""; }
+	if (key === "correct") { return typeof award?.reason === "function" ? award.reason(Math.max(0, ...selected.map(score => score.correct))) : award?.reason ?? ""; }
+	if (key === "chain") { return typeof award?.reason === "function" ? award.reason(Math.max(...item.resolutions.map(resolution => resolution.claims.length))) : award?.reason ?? ""; }
+	return typeof award?.reason === "function" ? award.reason(Math.max(...item.resolutions.map(resolution => resolution.claims.length))) : award?.reason ?? "Saavutus myönnettiin tämän ottelun tapahtumien perusteella.";
 }
 function recapPlayerStats(item: Recap, score: Score): { answersCorrect: number; answersSubmitted: number; bluffCallsCorrect: number; bluffCallsWrong: number; bluffsPassed: number; bluffsCaught: number } {
 	const answers = item.resolutions.filter(resolution => !resolution.cancelled && resolution.receiverPersonId === score.personId);
@@ -361,7 +392,7 @@ function recapPlayerStats(item: Recap, score: Score): { answersCorrect: number; 
 function History({ items }: { items: Recap[] }): ReactElement {
 	const [selected, setSelected] = useState(items.at(-1)?.id ?? "");
 	const item = items.find(i => i.id === selected) ?? items.at(-1);
-	return <section className="history"><h2>{FI.history.title}</h2>{!item ? <p>{FI.history.empty}</p> : <><label className="history__select">{FI.history.select}<select value={item.id} onChange={e => setSelected(e.target.value)}>{[...items].reverse().map((r, i) => <option key={r.id} value={r.id}>{FI.history.game(items.length - i, new Date(r.startedAt).toLocaleString("fi-FI"), r.loserName ?? FI.history.cancelled)}</option>)}</select></label><p><strong>{item.loserName ? FI.history.loser(item.loserName) : FI.history.endedNoLoser}</strong> {FI.history.resolvedCards(item.resolutions.filter(r => !r.cancelled).length)}</p><div className="scores"><table><thead><tr><th>{FI.history.player}</th><th>{FI.history.guesses}</th><th>{FI.history.bluffCalls}</th><th>{FI.history.ownBluffs}</th></tr></thead><tbody>{[...item.scores].map(function (score) { const stats = recapPlayerStats(item, score); return <tr key={score.personId}><td>{score.name}</td><td><strong>{stats.answersCorrect}/{stats.answersSubmitted}</strong><small>{stats.answersSubmitted ? `${Math.round(stats.answersCorrect / stats.answersSubmitted * 100)} %` : "—"}</small></td><td><strong>{stats.bluffCallsCorrect} / {stats.bluffCallsWrong}</strong><small>{FI.history.rightWrong}</small></td><td><strong>{stats.bluffsPassed} / {stats.bluffsCaught}</strong><small>{FI.history.passedCaught}</small></td></tr>; })}</tbody></table></div><div className="awards">{item.awards.map(a => <article key={a.key}><span className="eyebrow">{a.personIds.map(id => item.scores.find(s => s.personId === id)?.name ?? FI.history.defaultPlayer).join(" & ")}</span><h3>{a.title}</h3><p>{a.copy}</p><footer>{achievementReason(a.key, item, a.personIds)}</footer></article>)}</div><details><summary>{FI.history.roundByRound}</summary>{item.resolutions.map((r, i) => <details key={r.id}><summary>{i + 1}. {LABELS[r.card.creature]} · {r.cancelled ? FI.history.cancelled : FI.history.gotCard(item.scores.find(s => s.personId === r.penaltyPersonId)?.name ?? FI.history.defaultPlayer)}</summary><RoundDetails resolution={r} names={Object.fromEntries(item.scores.map(s => [s.personId, s.name]))} /></details>)}</details></>}</section>;
+	return <section className="history"><h2>{FI.history.title}</h2>{!item ? <p>{FI.history.empty}</p> : <><label className="history__select">{FI.history.select}<select value={item.id} onChange={e => setSelected(e.target.value)}>{[...items].reverse().map((r, i) => <option key={r.id} value={r.id}>{FI.history.game(items.length - i, new Date(r.startedAt).toLocaleString("fi-FI"), r.loserName ?? FI.history.cancelled)}</option>)}</select></label><p><strong>{item.loserName ? FI.history.loser(item.loserName) : FI.history.endedNoLoser}</strong> {FI.history.resolvedCards(item.resolutions.filter(r => !r.cancelled).length)}</p><div className="scores"><table><thead><tr><th>{FI.history.player}</th><th>{FI.history.guesses}</th><th>{FI.history.bluffCalls}</th><th>{FI.history.ownBluffs}</th></tr></thead><tbody>{[...item.scores].map(function (score) { const stats = recapPlayerStats(item, score); return <tr key={score.personId}><td>{score.name}</td><td><strong>{stats.answersCorrect}/{stats.answersSubmitted}</strong><small>{stats.answersSubmitted ? `${Math.round(stats.answersCorrect / stats.answersSubmitted * 100)} %` : "—"}</small></td><td><strong>{stats.bluffCallsCorrect} / {stats.bluffCallsWrong}</strong><small>{FI.history.rightWrong}</small></td><td><strong>{stats.bluffsPassed} / {stats.bluffsCaught}</strong><small>{FI.history.passedCaught}</small></td></tr>; })}</tbody></table></div><div className="awards">{item.awards.map(function (a) { const award = FI.history.awards[a.key as keyof typeof FI.history.awards] as AchievementText; return <article key={a.key}><span className="eyebrow">{a.personIds.map(id => item.scores.find(s => s.personId === id)?.name ?? FI.history.defaultPlayer).join(" & ")}</span><h3>{award.title}</h3><p>{award.copy}</p><footer>{achievementReason(a.key, item, a.personIds)}</footer></article>; })}</div><details><summary>{FI.history.roundByRound}</summary>{item.resolutions.map((r, i) => <details key={r.id}><summary>{i + 1}. {LABELS[r.card.creature]} · {r.cancelled ? FI.history.cancelled : FI.history.gotCard(item.scores.find(s => s.personId === r.penaltyPersonId)?.name ?? FI.history.defaultPlayer)}</summary><RoundDetails resolution={r} names={Object.fromEntries(item.scores.map(s => [s.personId, s.name]))} /></details>)}</details></>}</section>;
 }
 
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
