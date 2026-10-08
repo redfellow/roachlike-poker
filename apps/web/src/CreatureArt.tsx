@@ -1,8 +1,14 @@
 import type { ReactElement } from "react";
-import { LABELS, type Creature } from "@torakka/game";
+import { LABELS, type Creature, type ThemeId } from "@torakka/game";
+import { themeFor } from "./themes";
 
 const COLORS: Readonly<Record<Creature, string>> = { torakka: "#789448", lepakko: "#b299d1", karpanen: "#a5bd87", sammakko: "#b6ce74", rotta: "#d2a7a2", skorpioni: "#ecab68", hamahakki: "#aeafa4", lude: "#b5bd66" };
-export function CreatureArt({ creature, small = false }: { creature: Creature; small?: boolean }): ReactElement {
+export function CreatureArt({ creature, small = false, themeId = "orkkipokka" }: { creature: Creature; small?: boolean; themeId?: ThemeId }): ReactElement {
+	const theme = themeFor(themeId);
+	if (themeId === "herrasmiespokeri") {
+		const source = theme.images[creature];
+		return <span className={`creature creature--portrait${small ? " creature--small" : ""}`} role="img" aria-label={theme.labels[creature]}>{source ? <img src={source} alt="" /> : <span className="creature__placeholder"><b>HMP</b><small>HAHMO TULOSSA</small></span>}</span>;
+	}
 	const color = COLORS[creature];
 	return <svg className={`creature${small ? " creature--small" : ""}`} viewBox="0 0 120 120" role="img" aria-label={LABELS[creature]}>
 		<g stroke="#24251d" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
