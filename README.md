@@ -52,6 +52,6 @@ This is a friends-only identity model: an exact-name join may reclaim a disconne
 
 ## Configuration and deployment
 
-`TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 4300 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
+`HOST` overrides the default loopback bind address (Docker uses `0.0.0.0` internally); `TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 4300 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
 
-See [Windows deployment](ops/windows.md), [rules contract](docs/rules-contract.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).
+See [WSL Docker deployment](ops/wsl-deployment.md), [Windows deployment](ops/windows.md), [rules contract](docs/rules-contract.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).

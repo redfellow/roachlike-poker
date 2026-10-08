@@ -1,0 +1,5 @@
+# Compose 2.24+; combine with compose.yaml using both -f arguments.
+services:
+  game:
+    build: !reset null
+    image: ${TORAKKA_IMAGE:?Set TORAKKA_IMAGE to a GHCR version tag or digest}

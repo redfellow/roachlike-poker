@@ -1,0 +1,33 @@
+name: torakkapokeri
+services:
+  game:
+    image: torakkapokeri:${TORAKKA_RELEASE:-dev}
+    build: .
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${TORAKKA_HTTP_PORT:-18889}:3001"
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "3001"
+      TORAKKA_DB: /data/torakkapokeri.sqlite
+      TORAKKA_COUNTDOWN_MS: "5000"
+      TORAKKA_COMPUTER_DELAY_MS: "4300"
+    volumes:
+      - game-data:/data
+      - game-backups:/backups
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 30s
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  game-data:
+  game-backups:

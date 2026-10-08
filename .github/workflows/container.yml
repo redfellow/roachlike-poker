@@ -1,0 +1,107 @@
+name: Publish container
+
+on:
+  push:
+    branches: [development]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name != 'release' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Select image tags and verify stable source
+        id: image
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          commit="$(git rev-parse HEAD)"
+          channel=dev
+          version="dev-${commit}"
+          if [[ "$EVENT_NAME" == release ]]; then
+            [[ "$RELEASE_TAG" =~ ^v?[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "Stable release requires a numeric version tag." >&2; exit 1; }
+            git fetch origin main
+            git merge-base --is-ancestor "$commit" origin/main || { echo "Stable release commit must be on main." >&2; exit 1; }
+            channel=stable
+            version="$RELEASE_TAG"
+          fi
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Build and smoke-test Linux image
+        env:
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.image.outputs.version }}
+          COMMIT: ${{ steps.image.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$COMMIT" \
+            --label "org.opencontainers.image.version=$VERSION" \
+            -t "$IMAGE:$VERSION" .
+          docker run -d --name game-smoke -p 127.0.0.1:18889:3001 "$IMAGE:$VERSION"
+          trap 'docker logs game-smoke; docker rm -f game-smoke' EXIT
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:18889/api/health; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+          [[ "$ready" == true ]]
+          curl --fail --silent http://127.0.0.1:18889/ | grep -q '<div id="root"'
+          docker exec game-smoke test -s /data/torakkapokeri.sqlite
+      - name: Publish image
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE: ${{ steps.image.outputs.name }}
+          VERSION: ${{ steps.image.outputs.version }}
+          CHANNEL: ${{ steps.image.outputs.channel }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          # Release/commit tags must not be replaced by a rerun.
+          if docker manifest inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo "Image version already exists; use its existing digest." >&2
+            exit 1
+          fi
+          docker push "$IMAGE:$VERSION"
+          docker tag "$IMAGE:$VERSION" "$IMAGE:$CHANNEL"
+          docker push "$IMAGE:$CHANNEL"
+          {
+            echo "Published: \`$IMAGE:$VERSION\`"
+            echo "Channel: \`$IMAGE:$CHANNEL\`"
+            echo 'The Windows host has not been changed. Select this version there to deploy.'
+          } >> "$GITHUB_STEP_SUMMARY"

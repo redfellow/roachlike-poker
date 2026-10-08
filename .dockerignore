@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/dist
+data
+backups
+restore-test
+conceptart
+.env
+.env.*
+.secrets
+secrets
+.history
+.DS_Store
+playwright-report
+test-results
+coverage

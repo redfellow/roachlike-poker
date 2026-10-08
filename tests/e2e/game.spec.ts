@@ -1,5 +1,47 @@
 import { test, expect } from "@playwright/test";
 
+test("first-turn response guidance can be dismissed above the highlighted controls", async function ({ browser, request }) {
+	const create = await request.post("/api/rooms");
+	expect(create.ok()).toBe(true);
+	const { id } = await create.json() as { id: string };
+	const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
+	const pages = await Promise.all(contexts.map(context => context.newPage()));
+	try {
+		for (let index = 0; index < pages.length; index++) {
+			const page = pages[index]!;
+			await page.goto(`/r/${id}`);
+			await page.getByLabel("Millä nimellä sinua kirotaan?").fill(`Opastus ${index + 1}`);
+			await page.getByRole("button", { name: "Liity pöytään" }).click();
+			await expect(page.getByLabel("Opasta ensimmäisellä vuorollani")).toBeChecked();
+			await page.getByLabel("Vähennä animaatioita").check();
+		}
+		for (const page of pages) { await page.getByRole("button", { name: "Olen valmis" }).click(); }
+		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible();
+		await expect.poll(async function () {
+			const counts = await Promise.all(pages.map(page => page.locator(".hand-card:not(:disabled)").count()));
+			return counts.some(count => count > 0);
+		}).toBe(true);
+		const actor = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
+		const receiver = actor === pages[0] ? pages[1]! : pages[0]!;
+		await actor.getByRole("button", { name: "Selvä, pokka pitää ✕" }).click();
+		await actor.locator(".hand-card:not(:disabled)").first().click();
+		await actor.locator(".seat--targetable .seat__target").click();
+		const claim = actor.locator(".claim-card--truth");
+		await claim.click();
+		await expect(claim).toHaveAttribute("aria-pressed", "true");
+		await claim.click();
+		await expect(receiver.locator(".table")).toHaveClass(/table--choosing-response/);
+		await receiver.getByRole("button", { name: "Selvä, pokka pitää ✕" }).click();
+		await expect(receiver.getByRole("dialog")).toBeHidden();
+		await receiver.reload();
+		await expect(receiver.locator(".responses")).toBeVisible();
+		await expect(receiver.getByRole("dialog")).toBeHidden();
+		await receiver.getByRole("button", { name: "Uskon", exact: true }).click();
+		await expect(receiver.locator(".playing-card")).toHaveCount(0);
+	}
+	finally { for (const context of contexts) { await context.close(); } }
+});
+
 test("private room, full game, recap, rematch, hidden hands and reload", async function ({ browser, request }) {
 	test.setTimeout(180000);
 	const create = await request.post("/api/rooms");
@@ -14,6 +56,7 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 			await pages[i]!.getByRole("button", { name: "Liity pöytään" }).click();
 			await expect(pages[i]!.getByText("Pöytä on katettu.")).toBeVisible();
 			await pages[i]!.getByLabel("Vähennä animaatioita").check();
+			await pages[i]!.getByLabel("Opasta ensimmäisellä vuorollani").uncheck();
 		}
 		for (let i = 0; i < 2; i++) { await pages[i]!.getByRole("button", { name: "Olen valmis" }).click(); }
 		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
@@ -57,10 +100,14 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[1]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible();
 		await expect(pages[1]!.locator(".hand-card").first()).toBeVisible();
 		for (let turn = 0; turn < 60; turn++) {
+			for (const page of pages.slice(0, 2)) { await expect(page.locator(".resolution")).toBeHidden({ timeout: 7000 }); }
 			if (await pages[0]!.getByText("Se oli siinä.", { exact: true }).isVisible()) { break; }
+			await expect.poll(async function () {
+				const counts = await Promise.all(pages.slice(0, 2).map(page => page.locator(".hand-card:not(:disabled)").count()));
+				return counts.some(count => count > 0);
+			}).toBe(true);
 			const leader = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
 			const target = leader === pages[0] ? pages[1]! : pages[0]!;
-			await expect(leader.locator(".resolution")).toBeHidden({ timeout: 7000 });
 			const first = leader.locator(".hand-card:not(:disabled)").first();
 			await first.click();
 			await leader.locator(".seat--targetable .seat__target").click();
@@ -74,12 +121,13 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.locator(".history tbody tr")).toHaveCount(2);
 		await pages[0]!.getByRole("button", { name: "Uusi peli — sama kutsulinkki" }).click();
 		await expect(pages[1]!.getByText("Pöytä on katettu.")).toBeVisible();
+		await pages[0]!.locator(".topbar__more > summary").click();
 		await pages[0]!.getByRole("button", { name: /Historia/ }).click();
 		await expect(pages[0]!.locator(".modal .history tbody tr")).toHaveCount(2);
 		await expect(pages[0]!.locator(".modal .history")).toContainText("hävisi.");
 
 	}
-	finally { for (const context of contexts) { void context.close(); } }
+	finally { for (const context of contexts) { await context.close(); } }
 });
 
 test("keeps desktop response controls clear of the local player seat", async function ({ browser, request }) {
@@ -94,6 +142,7 @@ test("keeps desktop response controls clear of the local player seat", async fun
 			await pages[index]!.getByLabel("Millä nimellä sinua kirotaan?").fill(`Asettelu ${index + 1}`);
 			await pages[index]!.getByRole("button", { name: "Liity pöytään" }).click();
 			await pages[index]!.getByLabel("Vähennä animaatioita").check();
+			await pages[index]!.getByLabel("Opasta ensimmäisellä vuorollani").uncheck();
 		}
 		for (const page of pages) { await page.getByRole("button", { name: "Olen valmis" }).click(); }
 		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
@@ -106,19 +155,22 @@ test("keeps desktop response controls clear of the local player seat", async fun
 		expect(initialFirstCard!.y).toBeGreaterThanOrEqual(initialOwnSeat!.y + initialOwnSeat!.height + 4);
 		await actor.locator(".hand-card:not(:disabled)").first().click();
 		await actor.locator(".seat--targetable .seat__target").click();
-		await actor.locator(".claim-card").first().dblclick();
+		const claim = actor.locator(".claim-card").first();
+		await claim.click();
+		await expect(claim).toHaveAttribute("aria-pressed", "true");
+		await claim.click();
 		await expect(receiver.locator(".responses")).toBeVisible();
 		await expect(receiver.locator(".table-routes__path")).toHaveAttribute("d", / Q /);
 		const ownSeat = await receiver.locator(".seats--around .seat:last-child").boundingBox();
 		const responses = await receiver.locator(".responses").boundingBox();
 		const topSeat = await receiver.locator(".seats--2 .seat:first-child").boundingBox();
-		const tableLabel = await receiver.locator(".play-area > .eyebrow").boundingBox();
+		const presentation = await receiver.locator(".claim-presentation").boundingBox();
 		expect(ownSeat).not.toBeNull();
 		expect(responses).not.toBeNull();
 		expect(topSeat).not.toBeNull();
-		expect(tableLabel).not.toBeNull();
+		expect(presentation).not.toBeNull();
 		expect(responses!.y).toBeGreaterThanOrEqual(ownSeat!.y + ownSeat!.height + 4);
-		expect(tableLabel!.y).toBeGreaterThanOrEqual(topSeat!.y + topSeat!.height + 4);
+		expect(presentation!.y).toBeGreaterThanOrEqual(topSeat!.y + topSeat!.height + 4);
 	}
 	finally { for (const context of contexts) { await context.close(); } }
 });

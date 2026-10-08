@@ -38,7 +38,7 @@ export const FI = {
 		creatingRoom: "Avataan pöytää…",
 		createRoom: "Perusta oma pöytä ↗",
 		resumeRoom: "Palaa aiempaan huoneeseen",
-		privacyNote: "Yksityinen huone · selkäänpuukotuspeli · aikuisille",
+		privacyNote: "Avoin aula oletuksena · selkäänpuukotuspeli · aikuisille",
 		openRooms: "Avoimet pöydät",
 		hostRoom: (name: string) => `${name}n pöytä`,
 		roomPlayers: (count: number) => `${count}/6 pelaajaa`,

@@ -274,6 +274,7 @@ describe("complete-game invariants", function () {
 	it("plays complete fair computer games at every MVP table size", function () {
 		let sawPass = false;
 		let sawPrediction = false;
+		const awardCounts: number[] = [];
 		for (const count of [2, 3, 6]) {
 			for (let seed = 1; seed <= 12; seed++) {
 				let state = seed;
@@ -299,10 +300,13 @@ describe("complete-game invariants", function () {
 				}
 				expect(match.phase).toBe("ended");
 				expect(match.loserSeatId).not.toBeNull();
+				awardCounts.push(achievements(match).length);
 			}
 		}
 		expect(sawPass).toBe(true);
 		expect(sawPrediction).toBe(true);
+		expect(Math.max(...awardCounts)).toBeLessThan(16);
+		expect(awardCounts.some(count => count > 0)).toBe(true);
 	});
 	it.each([2, 3, 6])("plays %i-player games to a valid defeat without losing cards", function (count) {
 		for (let seed = 1; seed <= 20; seed++) {

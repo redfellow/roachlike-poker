@@ -1,6 +1,8 @@
 node_modules/
 dist/
 data/
+backups/
+restore-test/
 .env
 .env.*
 !.env.example

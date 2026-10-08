@@ -49,6 +49,14 @@ afterEach(async function () {
 	for (const path of paths.splice(0)) { rmSync(path, { recursive: true, force: true }); }
 });
 describe("authoritative room transport", function () {
+	it("creates readable three-word room codes and resolves deterministic collisions", async function () {
+		const { runtime } = await start(":memory:", { random: () => 0 });
+		const first = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const second = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		expect(first).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/);
+		expect(second).toMatch(/^[a-z]+-[a-z]+-[a-z]+$/);
+		expect(second).not.toBe(first);
+	});
 	it("lists new rooms as open until their host makes them private", async function () {
 		const { runtime, url } = await start();
 		const response = await runtime.app.inject({ method: "POST", url: "/api/rooms" });

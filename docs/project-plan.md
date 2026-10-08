@@ -35,7 +35,7 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 ## Rooms, Identity, and Spectators
 
-- Rooms are private by default and always retain an invite link. A host may publish a lobby in the landing page's open-room list; active open games accept late arrivals as spectators. The server supports multiple simultaneous room identities. A separate room-code feature has not been requested.
+- Rooms are listed openly by default and always retain an invite link. The host may make a lobby private before play; active open games accept late arrivals as spectators. New invite links use memorable three-word codes, with collision checks; existing UUID links remain valid. The server supports multiple simultaneous room identities.
 - Players ready up. Once all are ready, show an animated five-second countdown. Start automatically without a separate host action; cancel if someone unreadies, disconnects, or a new player joins. Spectators do not affect readiness. Require 2–6 players.
 - Late arrivals can spectate public gameplay, never private hands.
 - Names must be unique among connected players. An exact-name join can reclaim a disconnected player's seat, including from another device. No approval is required for this friends-only recovery; notify the table of the replacement. Revoke the old device’s control and show it a seat-in-use message. Transfer races and name normalization remain to be specified.
@@ -98,7 +98,8 @@ Each bucket requires explicit scope, dependencies, acceptance criteria, and veri
 
 ## Hosting and Reliability
 
-- The user has a domain and an existing Nginx installation on the Windows hosting PC, and can add a TLS certificate. Proposed game address: `https://torakkapokeri.redlan.co`. This hosting setup is not available on the current MacBook.
+- The user has a domain and an existing Nginx installation on the Windows hosting PC, and can add a TLS certificate. Proposed game address: `https://torakkapokeri.redlan.co`. SSH access to Ubuntu on Windows WSL2 is verified through Tailscale; Windows Nginx integration remains unverified.
+- Use GitHub Container Registry (GHCR) to distribute development and stable container releases. Automate image publishing with GitHub Actions so the Windows host can pull a chosen version for human playtests or ongoing hosting. Publishing an image and switching the running host are separate steps; the user chooses when and which version to deploy. Preserve saved games and recap history across updates, and keep earlier versions available for rollback.
 - MVP verification uses desktop Chrome at desktop and mobile viewport dimensions. Separate iPhone or physical-phone testing is not required for MVP. Responsive phone/tablet layouts remain in scope; viewport checks do not establish real-device compatibility.
 - Ongoing games must survive server restarts, in addition to browser reconnects.
 - Accepted stack: React/Vite, TypeScript, Node.js/Fastify/Socket.IO, SQLite, Vitest/Playwright, and ESLint Stylistic. Use existing Windows Nginx instead of Caddy. Details: [technical-plan.md](technical-plan.md).

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type APIRequestContext } from "@playwright/test";
 
-async function createSoloTable(page: Page, request: APIRequestContext, seatCount: number, reduced = true): Promise<void> {
+async function createSoloTable(page: Page, request: APIRequestContext, seatCount: number, reduced = true, guided = false): Promise<void> {
 	const create = await request.post("/api/rooms");
 	expect(create.ok()).toBe(true);
 	const { id } = await create.json() as { id: string };
@@ -9,6 +9,8 @@ async function createSoloTable(page: Page, request: APIRequestContext, seatCount
 	await page.getByRole("button", { name: "Liity pöytään" }).click();
 	for (let index = 1; index < seatCount; index++) { await page.getByRole("button", { name: "Lisää tietokonepelaaja" }).click(); }
 	await expect(page.locator(".lobby-player")).toHaveCount(seatCount);
+	await expect(page.getByLabel("Opasta ensimmäisellä vuorollani")).toBeChecked();
+	if (!guided) { await page.getByLabel("Opasta ensimmäisellä vuorollani").uncheck(); }
 	if (reduced) { await page.getByLabel("Vähennä animaatioita").check(); }
 	await page.getByRole("button", { name: "Olen valmis — ja epäilyttävä" }).click();
 	await expect(page.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
@@ -16,21 +18,25 @@ async function createSoloTable(page: Page, request: APIRequestContext, seatCount
 
 async function playToEnd(page: Page): Promise<void> {
 	for (let step = 0; step < 220; step++) {
-		if (await page.getByText("Se oli siinä.", { exact: true }).isVisible()) { return; }
+		const ended = page.getByText("Se oli siinä.", { exact: true });
 		const card = page.locator(".hand-card:not(:disabled)").first();
-		const believe = page.locator(".responses").getByRole("button", { name: "Uskon", exact: true });
+		const believe = page.locator(".responses button:not(:disabled)").filter({ hasText: /^Uskon$/ });
+		await expect(card.or(believe).or(ended).first()).toBeVisible({ timeout: 10000 });
+		if (await ended.isVisible()) { return; }
 		if (await card.isVisible()) {
-			try {
-				await card.click({ timeout: 500 });
-				await page.locator(".seat--targetable .seat__target").first().click({ timeout: 500 });
-				const claim = page.locator(".claim-card--truth");
-				await claim.click({ timeout: 500 });
-				await claim.click({ timeout: 500 });
-			}
-			catch { await page.waitForTimeout(40); }
+			await card.click();
+			await page.locator(".seat--targetable .seat__target").first().click();
+			const claim = page.locator(".claim-card--truth");
+			await claim.click();
+			await expect(claim).toHaveAttribute("aria-pressed", "true");
+			await claim.click();
+			await expect(claim).toBeHidden();
 		}
-		else if (await believe.isVisible()) { await believe.click({ timeout: 500 }).catch(function () { return; }); }
-		else { await page.waitForTimeout(40); }
+		else if (await believe.isVisible()) {
+			const response = await believe.elementHandle();
+			await believe.click();
+			await response!.waitForElementState("hidden");
+		}
 	}
 	throw new Error("Solo browser game did not finish within 220 actions.");
 }
@@ -51,6 +57,18 @@ async function closeSoloTable(page: Page): Promise<void> {
 
 test.afterEach(async function ({ page }) {
 	await closeSoloTable(page).catch(function () { return; });
+});
+
+test("first-turn guidance defaults on and its dismissal survives reload", async function ({ page, request }) {
+	await createSoloTable(page, request, 2, true, true);
+	const tutorial = page.getByRole("dialog", { name: "Lisätiedot" });
+	await expect(tutorial.getByRole("heading", { name: "Pieni peliohje" })).toBeVisible();
+	await tutorial.getByRole("button", { name: "Selvä, pokka pitää ✕" }).click();
+	await expect(tutorial).toBeHidden();
+	await page.reload();
+	await expect(page.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible();
+	await expect(page.locator(".hand-card:not(:disabled)").first().or(page.locator(".responses")).first()).toBeVisible();
+	await expect(tutorial).toBeHidden();
 });
 
 for (const seatCount of [2, 3, 6]) {
@@ -85,10 +103,10 @@ test("six-seat table fits a portrait Chrome viewport", async function ({ browser
 
 test("resolution exposes the accessible showdown without leaking the incoming card", async function ({ page, request }) {
 	await createSoloTable(page, request, 2, false);
-	await expect(page.locator(".turn-banner")).toBeVisible();
 	for (let step = 0; step < 200; step++) {
 		const card = page.locator(".hand-card:not(:disabled)").first();
 		if (await card.isVisible()) {
+			await expect(page.locator(".turn-banner")).toBeVisible();
 			await card.click({ force: true });
 			await page.locator(".seat--targetable .seat__target").click({ force: true });
 			const claim = page.locator(".claim-card--truth");
@@ -114,6 +132,7 @@ test("computer answer shows Totta or Valhetta feedback", async function ({ page,
 	await page.getByLabel("Millä nimellä sinua kirotaan?").fill("Testaaja");
 	await page.getByRole("button", { name: "Liity pöytään" }).click();
 	await page.getByRole("button", { name: "Lisää tietokonepelaaja" }).click();
+	await page.getByLabel("Opasta ensimmäisellä vuorollani").uncheck();
 	await page.getByLabel("Vähennä animaatioita").uncheck();
 	await page.getByRole("button", { name: "Olen valmis — ja epäilyttävä" }).click();
 	await expect(page.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });

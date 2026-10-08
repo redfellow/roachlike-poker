@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("host can publish a lobby on the landing page", async function ({ browser, request }) {
+test("a new lobby is listed openly by default", async function ({ browser, request }) {
 	const create = await request.post("/api/rooms");
 	expect(create.ok()).toBe(true);
 	const { id } = await create.json() as { id: string };
@@ -14,7 +14,6 @@ test("host can publish a lobby on the landing page", async function ({ browser, 
 		await host.getByRole("button", { name: /Herrasmiespokeri/ }).click();
 		await expect(host.locator(".app")).toHaveClass(/theme--herrasmiespokeri/);
 		await expect(host.getByRole("button", { name: /Herrasmiespokeri/ })).toHaveAttribute("aria-pressed", "true");
-		await host.getByLabel("Näytä aula avoimena etusivulla").click();
 		await expect(host.getByLabel("Näytä aula avoimena etusivulla")).toBeChecked();
 		await expect(host.getByText("AVOIN PÖYTÄ")).toBeVisible();
 

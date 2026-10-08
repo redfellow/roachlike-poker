@@ -16,6 +16,9 @@ interface Room {
 }
 export interface Runtime { app: FastifyInstance; io: Server; store: Store; close: () => Promise<void> }
 const COMPUTER_NAMES = ["🤖 Pelti-Pena", "🤖 Valhe-Veikko", "🤖 Kusetus 3000", "🤖 Bluffi-Börje", "🤖 Ruoste-Rane", "🤖 Paska-Pascal"] as const;
+const ROOM_CODE_FIRST = ["ahnas", "hilpea", "karvainen", "kiero", "likainen", "nokkela", "paatynyt", "ruma", "salainen", "uninen", "viekas", "ylpea"] as const;
+const ROOM_CODE_SECOND = ["baarin", "kellarin", "klubin", "kujan", "metsan", "mokin", "sataman", "saunan", "torin", "ullakon", "varaston", "viemarin"] as const;
+const ROOM_CODE_THIRD = ["herrasmies", "huijari", "lurjus", "molkky", "orvokki", "pokka", "rotta", "sankari", "sukka", "torakka", "velho", "orkki"] as const;
 const roomInactivityMs = 30 * 60 * 1000;
 function random(): number { return randomInt(0, 2 ** 32) / 2 ** 32; }
 function normalizeName(name: string): string {
@@ -81,6 +84,19 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		rooms.set(room.id, room);
 	}
 	function touch(room: Room): void { room.lastActivityAt = now(); }
+	function createRoomCode(): string {
+		const total = ROOM_CODE_FIRST.length * ROOM_CODE_SECOND.length * ROOM_CODE_THIRD.length;
+		const start = Math.min(total - 1, Math.floor(randomSource() * total));
+		for (let offset = 0; offset < total; offset++) {
+			const value = (start + offset) % total;
+			const third = value % ROOM_CODE_THIRD.length;
+			const second = Math.floor(value / ROOM_CODE_THIRD.length) % ROOM_CODE_SECOND.length;
+			const first = Math.floor(value / (ROOM_CODE_THIRD.length * ROOM_CODE_SECOND.length));
+			const code = `${ROOM_CODE_FIRST[first]}-${ROOM_CODE_SECOND[second]}-${ROOM_CODE_THIRD[third]}`;
+			if (!rooms.has(code)) { return code; }
+		}
+		throw new GameError("Kaikki huonekoodit ovat käytössä.");
+	}
 	function deleteRoom(room: Room): void {
 		const computerTimer = computerTimers.get(room.id);
 		if (computerTimer) { clearTimeout(computerTimer); computerTimers.delete(room.id); }
@@ -288,7 +304,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		return { theme: room.theme };
 	});
 	app.post("/api/rooms", async function (_request, _reply) {
-		const room: Room = { id: randomUUID(), revision: 0, members: [], seated: [], ready: [], hostId: "", countdownAt: null,
+		const room: Room = { id: createRoomCode(), revision: 0, members: [], seated: [], ready: [], hostId: "", countdownAt: null,
 			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: true, theme: structuredClone(DEFAULT_THEME), notice: "Tervetuloa pöytään.", lastActivityAt: now() };
 		save(room); return { id: room.id };
 	});

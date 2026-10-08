@@ -224,7 +224,7 @@ function Session({ roomId, name }: { roomId: string; name: string }): ReactEleme
 	}
 	if (replaced) { return <main className="status-page"><Logo /><h1>{FI.session.replacedTitle}</h1><p>{FI.session.replacedBody}</p><a className="button" href={location.pathname}>{FI.session.returnToJoin}</a></main>; }
 	if (destroyed) { return <main className="status-page"><Logo /><h1>{FI.session.searchingRoom}</h1><a className="button" href="/">{FI.common.back}</a></main>; }
-	if (!state) { return <main className="status-page"><Logo /><h1>{error || FI.session.searchingRoom}</h1><a className="button" href={location.pathname}>{FI.common.back}</a></main>; }
+	if (!state) { return <main className="status-page"><Logo /><h1>{error || FI.session.searchingRoom}</h1><a className="button" href="/">{FI.common.back}</a></main>; }
 	const me = state.members.find(m => m.id === state.me)!;
 	const host = state.hostId === state.me;
 	const game = state.game;

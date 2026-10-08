@@ -1,6 +1,6 @@
-# Windows Deployment — Not Yet Executed
+# Windows Deployment — WSL Dev Instance Running
 
-The Windows host and its existing Nginx configuration are unavailable from the current MacBook. This runbook is a preparation artifact, not proof of a deployed application.
+SSH to Ubuntu on Windows WSL2 is verified via the locally configured `windows-dev` SSH alias. Node 24, npm, Docker Desktop, and Compose are available. The game has been built and deployed as a healthy WSL Docker dev instance on loopback port 18889; Windows Nginx, TLS, and unattended startup remain unverified. Use the [WSL Docker runbook](wsl-deployment.md) for the prepared deployment. The direct Windows installation below is an alternative; change the example Nginx upstream to port 3001 for that approach.
 
 ## Install and run
 

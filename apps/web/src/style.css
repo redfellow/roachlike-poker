@@ -445,11 +445,11 @@ th { color: var(--muted); font-size: 10px; font-weight: 500; }
 .theme--herrasmiespokeri .end-panel .awards footer { color: #d8c39d; }
 .summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
 summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
-.table--choosing-target > :not(.seats):not(.play-area):not(.hand-area) { opacity: .18; filter: saturate(.35); pointer-events: none; }
+.table--choosing-target > :not(.seats):not(.play-area):not(.hand-area):not(.modal-backdrop) { opacity: .18; filter: saturate(.35); pointer-events: none; }
 .table--choosing-target .seats { filter: drop-shadow(0 0 12px #c8d77e26); }
 .table--choosing-target .seat:not(.seat--targetable) { opacity: .3; filter: saturate(.35); }
 .table--choosing-target .hand-card:not(.hand-card--selected) { opacity: .25; filter: saturate(.35); }
-.table--choosing-response > :not(.play-area):not(.seats):not(.hand-area) { opacity: .18; filter: saturate(.35); pointer-events: none; }
+.table--choosing-response > :not(.play-area):not(.seats):not(.hand-area):not(.modal-backdrop) { opacity: .18; filter: saturate(.35); pointer-events: none; }
 .table--choosing-response .play-area, .table--choosing-response .responses { filter: drop-shadow(0 0 12px #c8d77e22); }
 .focus-restore { display: none; }
 .focus-enter { border-color: #aebe69; background: #3a432e; color: #dce99a; box-shadow: 0 0 12px #c8d77e20; }
@@ -488,13 +488,13 @@ summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
 	.theme--herrasmiespokeri .seats--2 + .play-area, .theme--herrasmiespokeri .seats--4 + .play-area, .theme--herrasmiespokeri .seats--6 + .play-area { padding-top: 32px; }
 	.theme--herrasmiespokeri .seats--around + .play-area .claim-presentation { margin-top: 8px; margin-bottom: 12px; }
 	.theme--herrasmiespokeri .seats--around .seat:last-child { top: 365px; }
-	.theme--herrasmiespokeri .seats--around + .play-area { height: 300px; min-height: 300px; margin-bottom: 87px; }
+	.theme--herrasmiespokeri .seats--around + .play-area { height: 300px; min-height: 300px; margin-bottom: 107px; }
 	.theme--herrasmiespokeri .seats--4 .seat:nth-child(2), .theme--herrasmiespokeri .seats--4 .seat:nth-child(3) { top: 172px; }
 	.theme--herrasmiespokeri .hint { position: absolute; z-index: 6; right: 4.5%; left: 4.5%; margin: 0; transform: translateY(-100%); }
 	.theme--herrasmiespokeri .hand-area .responses { position: absolute; z-index: 40; top: 50%; right: auto; bottom: auto; left: 50%; width: max-content; max-width: calc(100% - 24px); margin: 0; transform: translate(-50%, -50%); }
 	.seats--around { display: block; position: relative; height: 0; margin: 0; }
 	.seats--around .seat { position: absolute; width: clamp(190px, 19vw, 260px); }
-	.seats--around + .play-area { min-height: 270px; margin: 78px 20% 100px; }
+	.seats--around + .play-area { min-height: 270px; margin: 78px 20% 120px; }
 	.seats--around + .play-area .decision-token { top: 58px; }
 	.seats--2 + .play-area, .seats--4 + .play-area, .seats--6 + .play-area { padding-top: 78px; }
 	.table--choosing-response .hand-area { padding-top: 0; }
