@@ -21,8 +21,10 @@ function random(): number { return randomInt(0, 2 ** 32) / 2 ** 32; }
 function normalizeName(name: string): string {
 	return name.trim().normalize("NFKC").toLocaleLowerCase("fi");
 }
-function createComputerName(room: Room): string {
-	return COMPUTER_NAMES.find(name => !room.members.some(member => member.name === name)) ?? `🤖 Kusetusbotti ${room.members.filter(member => member.computer).length + 1}`;
+function createComputerName(room: Room, randomSource: Random): string {
+	const available = COMPUTER_NAMES.filter(name => !room.members.some(member => member.name === name));
+	if (available.length) { return available[Math.min(available.length - 1, Math.floor(randomSource() * available.length))]!; }
+	return `🤖 Kusetusbotti ${room.members.filter(member => member.computer).length + 1}`;
 }
 function ensureComputerReadiness(room: Room): void {
 	if (room.game) { return; }
@@ -63,7 +65,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			computerIndex++;
 		}
 		room.lastActivityAt ??= now();
-		room.open ??= false;
+		room.open ??= true;
 		room.theme ??= structuredClone(DEFAULT_THEME);
 		if (room.game) { room.game.theme ??= structuredClone(room.theme); }
 		for (const item of room.history) { item.theme ??= structuredClone(DEFAULT_THEME); }
@@ -160,7 +162,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		if (action.kind === "add-computer") {
 			requireCondition(actor === room.hostId && !game, "Vain isäntä voi lisätä tietokonepelaajan ennen peliä.");
 			requireCondition(room.seated.length < 6, "Kaikki paikat ovat jo täynnä.");
-			const name = createComputerName(room);
+			const name = createComputerName(room, randomSource);
 			const member: Member = { id: randomUUID(), name, token: randomUUID(), computer: true };
 			room.members.push(member);
 			room.seated.push(member.id); room.ready.push(member.id);
@@ -287,7 +289,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 	});
 	app.post("/api/rooms", async function (_request, _reply) {
 		const room: Room = { id: randomUUID(), revision: 0, members: [], seated: [], ready: [], hostId: "", countdownAt: null,
-			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: false, theme: structuredClone(DEFAULT_THEME), notice: "Tervetuloa pöytään.", lastActivityAt: now() };
+			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: true, theme: structuredClone(DEFAULT_THEME), notice: "Tervetuloa pöytään.", lastActivityAt: now() };
 		save(room); return { id: room.id };
 	});
 	io.on("connection", function (socket) {

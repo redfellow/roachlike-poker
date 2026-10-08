@@ -49,14 +49,17 @@ afterEach(async function () {
 	for (const path of paths.splice(0)) { rmSync(path, { recursive: true, force: true }); }
 });
 describe("authoritative room transport", function () {
-	it("lists only rooms that their host has made open", async function () {
+	it("lists new rooms as open until their host makes them private", async function () {
 		const { runtime, url } = await start();
 		const response = await runtime.app.inject({ method: "POST", url: "/api/rooms" });
 		const roomId = response.json<{ id: string }>().id;
 		const host = await connect(url, roomId, "Reiska");
 		const guest = await connect(url, roomId, "Kaveri");
 		await synced([host, guest]);
-		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([]);
+		expect(host.state!.open).toBe(true);
+		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([{
+			id: roomId, hostName: "Reiska", seatedCount: 2, spectatorCount: 0, playing: false, themeId: "orkkipokka"
+		}]);
 		expect((await act(guest, { kind: "set-open", open: true })).ok).toBe(false);
 		expect((await act(guest, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(false);
 		expect((await act(host, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(true);
@@ -150,7 +153,7 @@ describe("authoritative room transport", function () {
 		expect(refreshed.state!.members.find(member => member.id === refreshed.state!.hostId)!.computer).toBe(false);
 	});
 	it("adds a host-controlled computer seat that is immediately ready and labeled", async function () {
-		const { runtime, url } = await start(":memory:", { countdownMs: 5000 });
+		const { runtime, url } = await start(":memory:", { countdownMs: 5000, random: function () { return 0; } });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const host = await connect(url, roomId, "A");
 		const botName = "🤖 Pelti-Pena";
@@ -166,6 +169,13 @@ describe("authoritative room transport", function () {
 		expect((await act(host, { kind: "remove", seatId: bot.id })).ok).toBe(true);
 		expect(host.state!.members.some(member => member.id === bot.id)).toBe(false);
 		expect(host.state!.countdownAt).toBeNull();
+	});
+	it("selects computer identities randomly from the unused names", async function () {
+		const { runtime, url } = await start(":memory:", { random: function () { return .5; } });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		await waitFor(() => host.state!.members.some(member => member.name === "🤖 Bluffi-Börje"));
 	});
 	it("starts the game when two computer players are ready", async function () {
 		const { runtime, url } = await start();
