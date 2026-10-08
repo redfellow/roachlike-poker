@@ -65,6 +65,7 @@ Dependency: B2 projections and B4; static layout can be reviewed earlier.
 - [x] B5.3 Uskon / En usko / peek-pass controls and explanation text. **Check:** legal choices only, private peek, final receiver forced to answer, no auto-response timer.
 - [x] B5.4 Original dark/gross creature art, restrained retro effects, resolution sounds, next-player banner. **Check:** correct personal/neutral sound, one reveal per revision, muted/reduced-motion use, no extra response wait.
 - [x] B5.5 Finnish rules and dismissible first-turn guidance. **Check:** checkbox defaults on, persists per device, guidance never pauses others or reveals private choices.
+- [x] B5.6 Host-selected, room-persistent visual themes. **Check:** a visual lobby picker is visible to everyone and editable only by the host before countdown; the chosen versioned theme follows the match, rematch, invite page, open-room listing, and recap; unknown or removed themes fall back to Örkkipokka. MVP ships Örkkipokka and Herrasmiespokeri, with three branded Herrasmies card placeholders pending final art.
 
 Review gate: full 2- and 6-player games usable in desktop Chrome at desktop and portrait-phone viewport sizes with an external call. Physical phone testing is deferred.
 

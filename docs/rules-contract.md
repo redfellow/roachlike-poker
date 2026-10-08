@@ -101,6 +101,8 @@ Save actual card ownership, committed private knowledge, phase, claims, predicti
 
 Persist recap history separately from the current match view. Do not reveal remaining hands just because a match ended. A saved recap contains only approved public/revealed information and factual achievements; private storage is not a public history payload.
 
+Persist the host-selected theme as an ID and version on the room, active match, and recap. Theme packs change presentation only: all card IDs, quantities, defeat thresholds, legal actions, scoring, and achievement conditions remain identical. If a stored theme is unavailable, clients render the default Örkkipokka theme without changing game state.
+
 On restart, mark connections offline, cancel unfinished countdowns and votes, preserve gameplay obligations, redeliver required prompts, and restart their AFK clocks. Replay snapshots without duplicate scores or historical sound effects.
 
 ## Worked Acceptance Scenarios
@@ -135,6 +137,7 @@ On restart, mark connections offline, cancel unfinished countdowns and votes, pr
 | R26 | Start rematch then restart server | Earlier recap remains accessible; new match has independent hands, readiness, and scores. |
 | R27 | Two-player survivor reaches four matching cards, survives three challenges, then wins | Eligible for Hautapaikka varattu; three matching cards alone was not its threshold. |
 | R28 | No bystander predictions submitted | No accuracy percentage from division by zero; neutral reaction; no Joukkokusetus. |
+| R29 | Host selects Herrasmiespokeri before countdown, plays, rematches, and later opens the recap after restart | All clients see the selected presentation; the match and recap retain its versioned theme; the rematch keeps it. |
 
 ## Outstanding Product Review
 

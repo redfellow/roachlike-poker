@@ -77,6 +77,8 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 - Provide mute and reduced-motion options.
 - Include concise Finnish rules and contextual action explanations.
 - Include a guided-first-turn checkbox in the lobby, default on, remembered per device. Guidance must be local and must not reveal hidden choices to other players. Show dismissible local hints during the first actual turn, without a separate practice game or pausing other players.
+- Treat visual themes as an MVP game setting. The host chooses a visual tile in the lobby before countdown; everyone sees changes immediately and the selection persists through the game and rematches. A theme can replace card art and names, card backs, table colors, theme-specific wording, and achievement titles/flavor while keeping mechanics, sounds, and factual achievement conditions shared. Store theme ID and version in recap history and fall back to Örkkipokka when an old theme is unavailable.
+- Ship Örkkipokka as the default and Herrasmiespokeri as the second MVP theme. Herrasmiespokeri uses maroon/brick red, black, fiery orange, brass/gold, worn parchment, top hats on avatars, and the fixed card-name mapping Härvääjä, Lurkki, Kiltti, Viilaaja, Nippeli plus three temporary placeholders until their artwork and names are supplied.
 
 ## Provisional Work Buckets
 
