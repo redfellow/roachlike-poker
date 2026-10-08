@@ -88,6 +88,7 @@ export const FI = {
 		stopGame: "Keskeytä peli",
 		focusMode: "Koko näyttö",
 		exitFocusMode: "Poistu koko näytöstä",
+		more: "Lisää",
 		gameEnded: "Jatketaan paremmalla porukalla.",
 	},
 	lobby: {
@@ -162,6 +163,7 @@ export const FI = {
 		startHint: "Valitse omista korteista örkki, sitten kohde ja väite. Vain Lähetä paljastaa väitteen muille.",
 		responseHint: "Uskon = väite pitää paikkansa. En usko = se on valhe. Katso ja siirrä sitoo sinut siirtämään kortin.",
 		dismissHint: "Selvä, pokka pitää ✕",
+		tutorialTitle: "Pieni peliohje",
 		secretPrediction: "Sivustakatsojan veikkaus",
 		predictionReveal: "Paljastetaan vasta kortin ratkettua.",
 		believe: "Uskon",
