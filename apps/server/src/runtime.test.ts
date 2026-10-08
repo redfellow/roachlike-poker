@@ -58,14 +58,29 @@ describe("authoritative room transport", function () {
 		await synced([host, guest]);
 		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([]);
 		expect((await act(guest, { kind: "set-open", open: true })).ok).toBe(false);
+		expect((await act(guest, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(false);
+		expect((await act(host, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect(host.state!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
 		expect((await act(host, { kind: "set-open", open: true })).ok).toBe(true);
 		await synced([host, guest]);
 		expect(host.state!.open).toBe(true);
 		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([{
-			id: roomId, hostName: "Reiska", seatedCount: 2, spectatorCount: 0, playing: false
+			id: roomId, hostName: "Reiska", seatedCount: 2, spectatorCount: 0, playing: false, themeId: "herrasmiespokeri"
 		}]);
 		expect((await act(host, { kind: "set-open", open: false })).ok).toBe(true);
 		expect((await runtime.app.inject({ method: "GET", url: "/api/rooms/open" })).json()).toEqual([]);
+	});
+	it("locks theme selection when the ready countdown begins", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 5000 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		const guest = await connect(url, roomId, "B");
+		await synced([host, guest]); await act(host, { kind: "ready", ready: true });
+		await synced([host, guest]); await act(guest, { kind: "ready", ready: true });
+		await waitFor(() => host.state!.countdownAt !== null);
+		expect((await act(host, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(false);
+		expect(host.state!.theme).toEqual({ id: "orkkipokka", version: 1 });
 	});
 	it("starts a game, isolates spectators, rejects stale actions and deduplicates retries", async function () {
 		const { runtime, url } = await start();
@@ -98,6 +113,7 @@ describe("authoritative room transport", function () {
 		const first = await start(path);
 		const roomId = (await first.runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const a = await connect(first.url, roomId, "A"); const b = await connect(first.url, roomId, "B");
+		await synced([a, b]); expect((await act(a, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(true);
 		await synced([a, b]); await act(a, { kind: "ready", ready: true });
 		await synced([a, b]); await act(b, { kind: "ready", ready: true });
 		await waitFor(() => Boolean(a.state!.game));
@@ -107,6 +123,8 @@ describe("authoritative room transport", function () {
 		const second = await start(path);
 		const restored = await connect(second.url, roomId, "A", token);
 		expect(restored.state!.game!.id).toBe(before.id);
+		expect(restored.state!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
+		expect(restored.state!.game!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
 		expect(restored.state!.game!.hand).toEqual(before.hand);
 		expect(restored.state!.game!.activeSeatId).toBe(before.activeSeatId);
 	});

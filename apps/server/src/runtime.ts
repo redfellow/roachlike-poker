@@ -4,7 +4,7 @@ import { Server, type Socket } from "socket.io";
 import { randomInt, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
-import { applyAction, chooseComputerAction, chooseComputerPrediction, createMatch, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap } from "@torakka/game";
+import { applyAction, chooseComputerAction, chooseComputerPrediction, createMatch, DEFAULT_THEME, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap, type ThemeRef } from "@torakka/game";
 import { commandSchema, joinSchema, type Command, type OpenRoomView, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
 import { Store } from "./store";
 
@@ -12,7 +12,7 @@ interface Member { id: string; name: string; token: string; computer: boolean }
 interface Room {
 	id: string; revision: number; members: Member[]; seated: string[]; ready: string[]; hostId: string;
 	countdownAt: number | null; game: Match | null; history: Recap[]; vote: VoteView | null;
-	waitingSeatId: string | null; promptAt: number | null; closed: boolean; open: boolean; notice: string; lastActivityAt: number;
+	waitingSeatId: string | null; promptAt: number | null; closed: boolean; open: boolean; theme: ThemeRef; notice: string; lastActivityAt: number;
 }
 export interface Runtime { app: FastifyInstance; io: Server; store: Store; close: () => Promise<void> }
 const COMPUTER_NAMES = ["🤖 Pelti-Pena", "🤖 Valhe-Veikko", "🤖 Kusetus 3000", "🤖 Bluffi-Börje", "🤖 Ruoste-Rane", "🤖 Paska-Pascal"] as const;
@@ -64,6 +64,9 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}
 		room.lastActivityAt ??= now();
 		room.open ??= false;
+		room.theme ??= structuredClone(DEFAULT_THEME);
+		if (room.game) { room.game.theme ??= structuredClone(room.theme); }
+		for (const item of room.history) { item.theme ??= structuredClone(DEFAULT_THEME); }
 		room.countdownAt = null; room.ready = []; room.vote = null; room.promptAt = null; ensureComputerReadiness(room); room.revision++;
 		rooms.set(room.id, room); store.save(room.id, JSON.stringify(room));
 	}
@@ -88,7 +91,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		return { id: room.id, revision: room.revision, me, hostId: room.hostId,
 			members: room.members.map(m => ({ id: m.id, name: m.name, online: memberOnline(room, m.id), seated: room.seated.includes(m.id), ready: room.ready.includes(m.id), computer: m.computer })),
 			countdownAt: room.countdownAt, game: room.game ? projectMatch(room.game, me) : null, vote: room.vote,
-			waitingSeatId: room.waitingSeatId, promptAt: room.promptAt, closed: room.closed, open: room.open, notice: room.notice, history: room.history };
+			waitingSeatId: room.waitingSeatId, promptAt: room.promptAt, closed: room.closed, open: room.open, theme: room.theme, notice: room.notice, history: room.history };
 	}
 	function broadcast(room: Room): void {
 		for (const member of room.members) { connections.get(member.id)?.emit("state", publicView(room, member.id)); }
@@ -169,6 +172,12 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			requireCondition(actor === room.hostId && !game, "Vain isäntä voi muuttaa aulan näkyvyyttä ennen peliä.");
 			room.open = action.open;
 			room.notice = action.open ? "Aula näkyy nyt avoimien pöytien listalla." : "Aula on nyt yksityinen.";
+			return;
+		}
+		if (action.kind === "set-theme") {
+			requireCondition(actor === room.hostId && !game && room.countdownAt === null, "Vain isäntä voi vaihtaa teemaa ennen lähtölaskentaa.");
+			room.theme = { id: action.themeId, version: 1 };
+			room.notice = action.themeId === "herrasmiespokeri" ? "Herrasmiespokeri on katettu." : "Örkkipokka on katettu.";
 			return;
 		}
 		if (action.kind === "leave-table") {
@@ -268,12 +277,17 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 	app.get("/api/health", async function () { return { ok: true }; });
 	app.get("/api/rooms/open", async function (): Promise<OpenRoomView[]> {
 		return [...rooms.values()].filter(room => room.open && !room.closed && room.members.length > 0).sort((a, b) => b.lastActivityAt - a.lastActivityAt).map(function (room) {
-			return { id: room.id, hostName: room.members.find(member => member.id === room.hostId)?.name ?? "Tuntematon", seatedCount: room.seated.length, spectatorCount: room.members.length - room.seated.length, playing: Boolean(room.game && room.game.phase !== "ended") };
+			return { id: room.id, hostName: room.members.find(member => member.id === room.hostId)?.name ?? "Tuntematon", seatedCount: room.seated.length, spectatorCount: room.members.length - room.seated.length, playing: Boolean(room.game && room.game.phase !== "ended"), themeId: room.theme.id };
 		});
+	});
+	app.get<{ Params: { id: string } }>("/api/rooms/:id/appearance", async function (request, reply) {
+		const room = rooms.get(request.params.id);
+		if (!room || room.closed) { return reply.code(404).send({ error: "Huonetta ei löytynyt." }); }
+		return { theme: room.theme };
 	});
 	app.post("/api/rooms", async function (_request, _reply) {
 		const room: Room = { id: randomUUID(), revision: 0, members: [], seated: [], ready: [], hostId: "", countdownAt: null,
-			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: false, notice: "Tervetuloa pöytään.", lastActivityAt: now() };
+			game: null, history: [], vote: null, waitingSeatId: null, promptAt: null, closed: false, open: false, theme: structuredClone(DEFAULT_THEME), notice: "Tervetuloa pöytään.", lastActivityAt: now() };
 		save(room); return { id: room.id };
 	});
 	io.on("connection", function (socket) {
@@ -372,7 +386,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				const room = structuredClone(original);
 				room.countdownAt = null;
 				if (room.seated.length >= 2 && room.seated.every(id => room.ready.includes(id) && memberOnline(room, id))) {
-					room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now());
+					room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now(), room.theme);
 					room.promptAt = now(); room.ready = []; room.notice = "Kortit jaettu. Älä luota kehenkään.";
 				}
 				touch(room); save(room); broadcast(room); scheduleComputerTurn(room);

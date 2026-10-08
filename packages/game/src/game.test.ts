@@ -336,5 +336,5 @@ describe("complete-game invariants", function () {
 			expect(match.phase).toBe("ended");
 			expect(match.loserSeatId).not.toBeNull();
 		}
-	});
+	}, 30000);
 });

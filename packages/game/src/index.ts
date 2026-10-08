@@ -1,5 +1,9 @@
 export const CREATURES = ["torakka", "lepakko", "karpanen", "sammakko", "rotta", "skorpioni", "hamahakki", "lude"] as const;
 export type Creature = typeof CREATURES[number];
+export const THEME_IDS = ["orkkipokka", "herrasmiespokeri"] as const;
+export type ThemeId = typeof THEME_IDS[number];
+export interface ThemeRef { id: ThemeId; version: number }
+export const DEFAULT_THEME: ThemeRef = { id: "orkkipokka", version: 1 };
 export const LABELS: Readonly<Record<Creature, string>> = {
 	torakka: "Örkki", lepakko: "Lepakko", karpanen: "Kärpänen", sammakko: "Sammakko",
 	rotta: "Rotta", skorpioni: "Skorpiooni", hamahakki: "Hämähäkki", lude: "Lude"
@@ -16,6 +20,7 @@ export interface Resolution {
 }
 export interface Match {
 	id: string; startedAt: number; endedAt: number | null; phase: "initiation" | "response" | "passing" | "ended";
+	theme: ThemeRef;
 	seats: Seat[]; people: Person[]; threshold: number; activeSeatId: string; challenge: Challenge | null;
 	unseen: Card[]; retired: Card[]; resolutions: Resolution[]; loserSeatId: string | null;
 	endReason: "matching" | "empty" | "abandoned" | null; nextChallenge: number;
@@ -29,14 +34,14 @@ export type GameAction =
 export interface PublicSeat { id: string; personId: string; name: string; handCount: number; display: Card[]; removed: boolean }
 export interface PublicClaim { senderId: string; senderPersonId: string; receiverId: string; creature: Creature }
 export interface GameView {
-	id: string; phase: Match["phase"]; threshold: number; activeSeatId: string; seats: PublicSeat[];
+	id: string; phase: Match["phase"]; theme: ThemeRef; threshold: number; activeSeatId: string; seats: PublicSeat[];
 	hand: Card[]; challenge: { id: string; claims: PublicClaim[]; card: Card | null; eligibleTargets: string[]; canPredict: boolean; prediction: boolean | null } | null;
 	lastResolution: Resolution | null; loserSeatId: string | null; endReason: Match["endReason"];
 	retired: Card[]; scores: Score[];
 }
 export interface Score { personId: string; name: string; correct: number; submitted: number; answersCorrect: number; answersSubmitted: number; bluffCallsCorrect: number; bluffCallsWrong: number; bluffs: number; bluffsCaught: number; catches: number }
 export interface Award { key: string; personIds: string[] }
-export interface Recap { id: string; startedAt: number; endedAt: number | null; loserName: string | null; reason: Match["endReason"]; scores: Score[]; awards: Award[]; resolutions: Resolution[] }
+export interface Recap { id: string; startedAt: number; endedAt: number | null; theme: ThemeRef; loserName: string | null; reason: Match["endReason"]; scores: Score[]; awards: Award[]; resolutions: Resolution[] }
 export class GameError extends Error {
 	constructor(message: string) { super(message); this.name = "GameError"; }
 }
@@ -53,7 +58,7 @@ export function shuffle<T>(items: readonly T[], random: Random): T[] {
 	}
 	return result;
 }
-export function createMatch(id: string, players: readonly Person[], random: Random, now: number): Match {
+export function createMatch(id: string, players: readonly Person[], random: Random, now: number, theme: ThemeRef = DEFAULT_THEME): Match {
 	requireCondition(players.length >= 2 && players.length <= 6, "Peliin tarvitaan 2–6 pelaajaa.");
 	requireCondition(new Set(players.map(p => p.id)).size === players.length, "Pelaajat eivät saa toistua.");
 	const creatures = shuffle(CREATURES.flatMap(creature => Array.from({ length: 8 }, () => creature)), random);
@@ -63,7 +68,7 @@ export function createMatch(id: string, players: readonly Person[], random: Rand
 	const dealingOrder = shuffle(seats, random);
 	deck.forEach(function (card, index) { dealingOrder[index % seats.length]!.hand.push(card); });
 	return {
-		id, startedAt: now, endedAt: null, phase: "initiation", seats, people: [...players], threshold: players.length === 2 ? 5 : 4,
+		id, startedAt: now, endedAt: null, phase: "initiation", theme: structuredClone(theme), seats, people: [...players], threshold: players.length === 2 ? 5 : 4,
 		activeSeatId: seats[Math.floor(random() * seats.length)]!.id, challenge: null, unseen, retired: [], resolutions: [],
 		loserSeatId: null, endReason: null, nextChallenge: 1
 	};
@@ -245,7 +250,7 @@ export function projectMatch(match: Match, personId: string | null): GameView {
 	const seat = match.seats.find(s => !s.removed && s.personId === personId);
 	const challenge = match.challenge;
 	return {
-		id: match.id, phase: match.phase, threshold: match.threshold, activeSeatId: match.activeSeatId,
+		id: match.id, phase: match.phase, theme: structuredClone(match.theme ?? DEFAULT_THEME), threshold: match.threshold, activeSeatId: match.activeSeatId,
 		seats: match.seats.map(s => ({ id: s.id, personId: s.personId, name: s.name, handCount: s.hand.length, display: structuredClone(s.display), removed: s.removed })),
 		hand: seat ? structuredClone(seat.hand) : [],
 		challenge: challenge ? {
@@ -318,7 +323,7 @@ export function inventory(match: Match): Card[] {
 	return [...match.seats.flatMap(s => [...s.hand, ...s.display]), ...match.unseen, ...match.retired, ...(match.challenge ? [match.challenge.card] : [])];
 }
 export function recap(match: Match): Recap {
-	return { id: match.id, startedAt: match.startedAt, endedAt: match.endedAt, loserName: match.seats.find(s => s.id === match.loserSeatId)?.name ?? null,
+	return { id: match.id, startedAt: match.startedAt, endedAt: match.endedAt, theme: structuredClone(match.theme ?? DEFAULT_THEME), loserName: match.seats.find(s => s.id === match.loserSeatId)?.name ?? null,
 		reason: match.endReason, scores: scores(match), awards: achievements(match), resolutions: structuredClone(match.resolutions) };
 }
 export function achievements(match: Match): Award[] {

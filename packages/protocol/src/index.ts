@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CREATURES, type GameView, type Recap } from "@torakka/game";
+import { CREATURES, THEME_IDS, type GameView, type Recap, type ThemeId, type ThemeRef } from "@torakka/game";
 
 const creature = z.enum(CREATURES);
 const id = z.string().min(1).max(200);
@@ -20,6 +20,7 @@ export const commandSchema = z.object({
 		z.object({ kind: z.literal("leave-table") }),
 		z.object({ kind: z.literal("add-computer") }),
 		z.object({ kind: z.literal("set-open"), open: z.boolean() }),
+		z.object({ kind: z.literal("set-theme"), themeId: z.enum(THEME_IDS) }),
 		z.object({ kind: z.literal("rematch") }),
 		z.object({ kind: z.literal("end") }),
 		z.object({ kind: z.literal("close-lobby") }),
@@ -35,8 +36,8 @@ export interface VoteView { seatId: string; requesterId: string; voters: string[
 export interface RoomView {
 	id: string; revision: number; me: string; hostId: string; members: MemberView[]; countdownAt: number | null;
 	game: GameView | null; vote: VoteView | null; waitingSeatId: string | null; promptAt: number | null;
-	closed: boolean; open: boolean; notice: string; history: Recap[];
+	closed: boolean; open: boolean; theme: ThemeRef; notice: string; history: Recap[];
 }
-export interface OpenRoomView { id: string; hostName: string; seatedCount: number; spectatorCount: number; playing: boolean }
+export interface OpenRoomView { id: string; hostName: string; seatedCount: number; spectatorCount: number; playing: boolean; themeId: ThemeId }
 export type Reply = { ok: true; token?: string } | { ok: false; error: string };
 export const joinSchema = z.object({ roomId: id, name: nameSchema, token: z.string().max(200).optional() });
