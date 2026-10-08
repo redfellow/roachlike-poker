@@ -10,7 +10,7 @@ Status: the external-video-call gameplay MVP, including host-selected themes, is
 - Ready checks, automatic countdowns, same-link rematches, exact-name seat recovery, automatic host transfer, and computer players that are ready by default.
 - Computer players with varied names, legally limited knowledge, mixed bluff behavior, rotating targets, deliberate action delays, peek/pass decisions, and predictions.
 - Finnish React UI with table-relative seats, grouped private hands, curved claim routes, claim/reveal animations, outcome feedback, turn banners, retro sounds, reduced motion, focus mode, and responsive layouts.
-- Versioned host-selected themes that persist with rooms, matches, rematches, open-room listings, invite pages, and recap history. Örkkipokka remains the fallback; Herrasmiespokeri includes its own names, copy, achievements, card backs, table palette, five supplied portraits, and three temporary card placeholders.
+- Versioned host-selected themes that persist with rooms, matches, rematches, open-room listings, invite pages, and recap history. Örkkipokka remains the fallback; Herrasmiespokeri includes its own names, copy, achievements, card backs, table palette, seven supplied portraits, and one temporary card placeholder.
 - Expanded match statistics and evidence-based achievements with stricter thresholds and plain-language award reasons.
 - Database backup tooling plus Windows/Nginx deployment instructions and configuration examples.
 
@@ -27,7 +27,7 @@ Status: the external-video-call gameplay MVP, including host-selected themes, is
 - Make the complete Playwright suite pass repeatedly, including the intermittent full-game timeout.
 - Recheck 2–6-seat table layouts at narrow desktop and wide desktop sizes, especially top/bottom seat overlap, exposed-card totals, route lines, prompts, and turn banners.
 - Exercise achievement boundary fixtures and run longer games to confirm the revised rules produce a useful number and variety of awards.
-- Replace the three Herrasmiespokeri placeholder portraits when the remaining artwork arrives, then visually verify all eight portraits from compact counters through full hand cards.
+- Replace the final Herrasmiespokeri placeholder portrait when its artwork arrives, then visually verify all eight portraits from compact counters through full hand cards.
 - Run friend-group acceptance games with external video chat at 2, 3, and 6 players; record and fix blockers.
 - Verify native SQLite installation, Nginx/TLS proxying, backups, reboot recovery, and external Chrome connections on the Windows host.
 
