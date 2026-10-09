@@ -30,6 +30,7 @@ small { color: var(--muted); }
 .logo { text-decoration: none; font-family: "Barlow Condensed", Impact, sans-serif; font-size: 25px; font-weight: 800; letter-spacing: -.6px; display: inline-flex; align-items: center; white-space: nowrap; }
 .logo__bug { color: var(--accent); font-size: 36px; margin-right: 9px; }
 .logo__light { color: var(--muted); font-weight: 600; }
+.logo__version { align-self: flex-end; margin: 0 0 5px 7px; color: var(--muted); font: 600 8px "DM Sans", sans-serif; letter-spacing: .04em; }
 .topbar__tools { display: flex; align-items: center; gap: 6px; }
 .game-status { display: inline-flex; align-items: center; padding: 0 6px; color: var(--muted); font-size: 9px; letter-spacing: .08em; white-space: nowrap; }
 .topbar__more { position: relative; }
@@ -45,6 +46,9 @@ small { color: var(--muted); }
 .sound-toggle input:checked + .sound-toggle__track { border-color: var(--lime); background: #4a5738; }
 .sound-toggle input:checked + .sound-toggle__track > span { background: var(--lime); transform: translateX(14px); }
 .sound-toggle input:focus-visible + .sound-toggle__track { outline: 3px solid var(--lime); outline-offset: 3px; }
+.music-volume { min-height: 40px; padding: 6px 8px; display: inline-flex; align-items: center; gap: 7px; color: #bcbfb0; font-size: 10px; font-weight: 700; }
+.music-volume input { width: 82px; padding: 12px 0 !important; accent-color: var(--lime); }
+.music-volume output { min-width: 30px; color: var(--muted); font-size: 9px; text-align: right; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #61674e; background: #32382a; color: var(--cream); border-radius: 5px; padding: 12px 18px; min-height: 44px; text-decoration: none; font-size: 14px; font-weight: 700; transition: background .15s, transform .15s; }
 .button:hover:not(:disabled) { background: #424b32; transform: translateY(-1px); }
 .button--primary { background: var(--lime); color: var(--ink); border-color: var(--lime); }
@@ -84,6 +88,7 @@ small { color: var(--muted); }
 .join-form__row { display: flex; gap: 8px; }
 input:not([type="checkbox"]), select { padding: 12px 14px; border: 1px solid #5d6450; border-radius: 5px; background: #24291f; color: var(--cream); min-width: 0; min-height: 46px; }
 .join-form input { flex: 1; width: 100%; }
+.join-form .fineprint { margin-top: 7px; }
 .open-rooms { max-width: 540px; margin-top: 28px; }
 .open-rooms h2 { margin-bottom: 10px; font-size: 24px; }
 .open-rooms > div { display: grid; gap: 8px; }
@@ -140,6 +145,7 @@ input:not([type="checkbox"]), select { padding: 12px 14px; border: 1px solid #5d
 .avatar__hat::before { content: ""; position: absolute; left: 5px; bottom: 2px; width: 15px; height: 11px; border-radius: 3px 3px 1px 1px; background: #17110f; }
 .avatar--gentleman { overflow: visible; }
 .mini-card { padding: 25px 35px; border-radius: 8px; background: #c6c9a1; color: var(--ink); margin-bottom: 30px; text-align: center; transform: rotate(3deg); }
+.mini-card__art { display: block; animation: lobby-card-crossfade .35s ease-out both; }
 .mini-card .creature { width: 155px; height: 155px; }
 .mini-card p { font-size: 12px; font-weight: 600; margin-bottom: 0; }
 .check { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 10px 0; }
@@ -282,13 +288,15 @@ input:not([type="checkbox"]), select { padding: 12px 14px; border: 1px solid #5d
 .hand-card--image.hand-card--rotta { --card-tint: #b58a2a; border-color: #e3c66a; }
 .hand-card--image.hand-card--skorpioni { --card-tint: #3478b8; border-color: #82b8e6; }
 .hand-card--image.hand-card--hamahakki { --card-tint: #238f89; border-color: #72cbc0; }
+.hand-card--image.hand-card--lude { --card-tint: #607f96; border-color: #b9d5e7; }
 .hand-card--image.hand-card--torakka .creature img { object-position: 50% 3%; transform: scale(2.3); }
-.hand-card--image.hand-card--lepakko .creature img { object-position: 52% -137%; transform: scale(1.7); }
+.hand-card--image.hand-card--lepakko .creature img { object-position: 50% -150%; transform: scale(1.6); }
 .hand-card--image.hand-card--karpanen .creature img { object-position: 50% 22%; transform: scale(1.18); }
-.hand-card--image.hand-card--sammakko .creature img { object-position: 60% 22%; transform: scale(1.2); }
+.hand-card--image.hand-card--sammakko .creature img { object-position: 50% 22%; transform: translateX(-10%) scale(1.2); }
 .hand-card--image.hand-card--rotta .creature img { object-position: 50% 29%; }
 .hand-card--image.hand-card--skorpioni .creature img { object-position: 52% -20%; transform: scale(1.65); }
 .hand-card--image.hand-card--hamahakki .creature img { object-position: 52% -77%; transform: scale(2.65); }
+.hand-card--image.hand-card--lude .creature img { object-position: 50% 32%; transform: scale(1.08); }
 .hand-card--image strong { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; padding: 15px 3px 5px; color: #fff8e7; font-size: 11px; line-height: 1; text-shadow: 0 1px 2px #000, 0 0 5px #000; background: linear-gradient(transparent, #160b09e8 58%); }
 .hand-card--image .hand-card__count { z-index: 3; top: 5px; right: 6px; color: #17100e; font-size: 12px; font-weight: 900; paint-order: stroke fill; -webkit-text-stroke: 3px #fff; text-shadow: 0 1px 2px #0005; }
 .compose { display: flex; align-items: end; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; padding: 10px 14px; border-radius: 7px; background: #23281f; }
@@ -395,6 +403,13 @@ th { color: var(--muted); font-size: 10px; font-weight: 500; }
 .theme--herrasmiespokeri .playing-card, .theme--herrasmiespokeri .handoff-card { border-color: #c99c4a; color: #e7c878; background: repeating-linear-gradient(45deg, #2a1210 0 4px, #6b241a 4px 7px); }
 .theme--herrasmiespokeri .claimed-card, .theme--herrasmiespokeri .showdown__card, .theme--herrasmiespokeri .hand-card, .theme--herrasmiespokeri .claim-card { background: #dbc69a; border-color: #eed9aa; color: #21120e; }
 .theme--herrasmiespokeri .mini-card, .theme--herrasmiespokeri .hero-card { background: #dbc69a; border-color: #eed9aa; }
+.theme--herrasmiespokeri .mini-card { position: relative; width: 150px; aspect-ratio: 2 / 3; margin-right: auto; margin-left: auto; padding: 0; overflow: hidden; border: 3px solid var(--image-card-tint, #eed9aa); background: #21120e; }
+.theme--herrasmiespokeri .mini-card__art, .theme--herrasmiespokeri .mini-card .creature { display: block; width: 100%; height: 100%; }
+.theme--herrasmiespokeri .mini-card .creature { border: 0; border-radius: 0; }
+.theme--herrasmiespokeri .mini-card .creature img { transform: scale(var(--image-scale, 1.54)); object-position: var(--image-position, 50% 30%); }
+.theme--herrasmiespokeri .mini-card[data-creature="lepakko"] .creature img { object-position: 50% 18%; transform: scale(1.23); transform-origin: 50% 18%; }
+.theme--herrasmiespokeri .mini-card[data-creature="hamahakki"] .creature img { object-position: 50% 22%; transform: scale(1.35); transform-origin: 50% 22%; }
+.theme--herrasmiespokeri .mini-card p { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; margin: 0; padding: 24px 5px 7px; color: #fff8e7; background: linear-gradient(transparent, #160b09ed 64%); text-shadow: 0 1px 2px #000, 0 0 5px #000; }
 .theme--herrasmiespokeri .hero-card--back { background: repeating-linear-gradient(45deg, #5e1d18 0 8px, #7b2b20 8px 12px); color: #e7c878; }
 .theme--herrasmiespokeri .table-routes__segment { color: #e16735; }
 .theme--herrasmiespokeri .claim-presentation { min-height: 120px; }
@@ -407,18 +422,26 @@ th { color: var(--muted); font-size: 10px; font-weight: 500; }
 .theme--herrasmiespokeri .playing-card--known > strong, .theme--herrasmiespokeri .claimed-card > strong, .theme--herrasmiespokeri .showdown__card > strong { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; padding: 20px 4px 6px; color: #fff8e7; font-size: 10px; line-height: 1; text-shadow: 0 1px 2px #000, 0 0 5px #000; background: linear-gradient(transparent, #160b09e8 62%); }
 .theme--herrasmiespokeri .claim-card { padding: 0; overflow: hidden; background: #21120e; }
 .theme--herrasmiespokeri .claim-card .creature { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; border: 0; border-radius: 3px; }
-.theme--herrasmiespokeri .claim-card .creature img { transform: scale(var(--picker-image-scale, var(--image-scale, 1.54))); object-position: var(--image-position, 50% 30%); }
+.theme--herrasmiespokeri .claim-card .creature img { position: absolute; inset: 0; transform: scale(var(--picker-image-scale, var(--image-scale, 1.54))); transform-origin: center; object-position: var(--picker-image-position, var(--image-position, 50% 30%)); }
 .theme--herrasmiespokeri .claim-card::after { content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: var(--image-card-tint, transparent); mix-blend-mode: color; opacity: .25; box-shadow: inset 0 0 24px var(--image-card-tint, transparent); }
 .theme--herrasmiespokeri .claim-card > span { position: absolute; z-index: 2; right: 0; bottom: 0; left: 0; padding: 22px 3px 7px; color: #fff8e7; font-size: 10px; text-shadow: 0 1px 2px #000, 0 0 5px #000; background: linear-gradient(transparent, #160b09ee 62%); }
 .theme--herrasmiespokeri .claim-card > small { position: absolute; z-index: 3; top: 5px; left: 5px; margin: 0; padding: 2px 4px; border-radius: 3px; color: #fff8e7; background: #160b09d9; text-shadow: 0 1px 2px #000; }
 .theme--herrasmiespokeri .claim-card > .claim-card__confirm { top: auto; right: 5px; bottom: 25px; left: auto; color: #fff8e7; }
 .theme--herrasmiespokeri [data-creature="torakka"] { --image-card-tint: #c63f36; --image-position: 50% 3%; --image-scale: 2.3; border-color: #ef7968; }
-.theme--herrasmiespokeri [data-creature="lepakko"] { --image-card-tint: #8d56b3; --image-position: 52% -137%; --image-scale: 1.7; --picker-image-scale: 2.2; border-color: #c993e5; }
+.theme--herrasmiespokeri [data-creature="lepakko"] { --image-card-tint: #8d56b3; --image-position: 50% 20%; --image-scale: 1.2; border-color: #c993e5; }
 .theme--herrasmiespokeri [data-creature="karpanen"] { --image-card-tint: #27633f; --image-position: 50% 22%; --image-scale: 1.18; --picker-image-scale: 1.55; border-color: #6fa66b; }
 .theme--herrasmiespokeri [data-creature="sammakko"] { --image-card-tint: #e24f24; --image-position: 60% 22%; --image-scale: 1.2; --picker-image-scale: 1.57; border-color: #ff9252; }
 .theme--herrasmiespokeri [data-creature="rotta"] { --image-card-tint: #b58a2a; --image-position: 50% 29%; --image-scale: 1.54; border-color: #e3c66a; }
 .theme--herrasmiespokeri [data-creature="skorpioni"] { --image-card-tint: #3478b8; --image-position: 52% -20%; --image-scale: 1.65; border-color: #82b8e6; }
 .theme--herrasmiespokeri [data-creature="hamahakki"] { --image-card-tint: #238f89; --image-position: 52% -77%; --image-scale: 2.65; border-color: #72cbc0; }
+.theme--herrasmiespokeri [data-creature="lude"] { --image-card-tint: #607f96; --image-position: 50% 32%; --image-scale: 1.08; border-color: #b9d5e7; }
+.theme--herrasmiespokeri .claim-card[data-creature="lepakko"] .creature img,
+.theme--herrasmiespokeri .claim-card[data-creature="hamahakki"] .creature img,
+.theme--herrasmiespokeri .claim-card[data-creature="lude"] .creature img { width: 100%; height: 100%; min-width: 100%; min-height: 100%; object-fit: cover; }
+.theme--herrasmiespokeri .claim-card[data-creature="lepakko"] .creature img { object-position: 81% 16%; transform: scale(2.23); transform-origin: 50% 14%; }
+.theme--herrasmiespokeri .claim-card[data-creature="sammakko"] .creature img { object-position: 260% 22%; transform: scale(1.5); transform-origin: 50% 30%; }
+.theme--herrasmiespokeri .claim-card[data-creature="hamahakki"] .creature img { object-position: 50% 22%; transform: scale(2.5); transform-origin: 50% 33%; }
+.theme--herrasmiespokeri .claim-card[data-creature="lude"] .creature img { object-position: 50% 22%; transform: none; }
 .theme--herrasmiespokeri .compose { border: 1px solid #5e3928; background: #251511; }
 .theme--herrasmiespokeri .compose__step { color: #f0dfba; }
 .theme--herrasmiespokeri .responses { border-color: #76502e; background: #251511f2; }
@@ -483,6 +506,7 @@ summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
 @keyframes thinking-dots { 0% { clip-path: inset(0 68% 0 0); opacity: .45; } 50% { clip-path: inset(0 34% 0 0); opacity: .75; } 100% { clip-path: inset(0); opacity: 1; } }
 @keyframes selected-claim { 0%, 100% { box-shadow: 0 0 0 2px var(--lime), 0 0 14px #c8d77e44; } 50% { box-shadow: 0 0 0 3px #e5f5a0, 0 0 30px #c8d77e88; } }
 @keyframes playable-card { 0%, 100% { box-shadow: 0 4px 8px #0003; transform: translateY(0); } 50% { box-shadow: 0 0 20px #c8d77e55, 0 7px 12px #0005; transform: translateY(-3px); } }
+@keyframes lobby-card-crossfade { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
 @media (min-width: 1300px) { .seats { grid-template-columns: repeat(6, minmax(0, 1fr)); } .seat { padding: 12px; } .seat__identity strong { font-size: 12px; } }
 @media (min-width: 851px) {
 	.theme--herrasmiespokeri .seats--2 + .play-area, .theme--herrasmiespokeri .seats--4 + .play-area, .theme--herrasmiespokeri .seats--6 + .play-area { padding-top: 32px; }
@@ -541,6 +565,9 @@ summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
 	.topbar__tools .button { padding: 9px; font-size: 10px; }
 	.sound-toggle { padding: 5px 7px; gap: 5px; font-size: 9px; }
 	.sound-toggle__label { display: none; }
+	.music-volume { gap: 4px; padding: 5px 4px; }
+	.music-volume > span { display: none; }
+	.music-volume input { width: 65px; }
 	.landing__main { grid-template-columns: 1fr; padding: 40px 22px 20px; gap: 0; }
 	.landing__copy h1 { font-size: clamp(58px, 14vw, 82px); }
 	.landing__copy .eyebrow { font-size: 9px; letter-spacing: 1px; }
@@ -575,6 +602,15 @@ summary { cursor: pointer; padding: 10px 0; font-size: 12px; }
 	.hand-card { width: 100%; height: 102px; padding: 12px 3px 5px; }
 	.hand-card .creature { width: 56px; height: 56px; }
 	.hand-card strong { font-size: 8px; }
+	.hand-card--image .creature img { object-position: 50% 28%; transform: scale(1.1); }
+	.hand-card--image.hand-card--torakka .creature img { object-position: 50% 24%; transform: scale(1.35); }
+	.hand-card--image.hand-card--lepakko .creature img { object-position: 52% 28%; transform: scale(1.1); }
+	.hand-card--image.hand-card--karpanen .creature img { object-position: 50% 25%; transform: scale(1.05); }
+	.hand-card--image.hand-card--sammakko .creature img { object-position: 60% 28%; transform: scale(1.05); }
+	.hand-card--image.hand-card--rotta .creature img { object-position: 50% 30%; transform: scale(1.1); }
+	.hand-card--image.hand-card--skorpioni .creature img { object-position: 52% 28%; transform: scale(1.1); }
+	.hand-card--image.hand-card--hamahakki .creature img { object-position: 52% 25%; transform: scale(1.15); }
+	.hand-card--image.hand-card--lude .creature img { object-position: 50% 32%; transform: scale(1.02); }
 	.hand-area__heading .eyebrow { font-size: 8px; letter-spacing: .6px; }
 	.compose { display: grid; grid-template-columns: 1fr 1fr; padding: 12px; gap: 10px; }
 	.compose select { width: 100%; }

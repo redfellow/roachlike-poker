@@ -69,6 +69,7 @@ export const FI = {
 		mutedShort: "♪ pois",
 		soundOn: "♪ päällä",
 		soundLabel: "Äänet",
+		musicLabel: "Musiikki",
 		rules: "Säännöt",
 		history: "Historia",
 		privateTable: "YKSITYINEN PÖYTÄ",

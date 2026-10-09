@@ -55,8 +55,8 @@ When asked to suggest commits, always check the files, also consider unstaged.
 When asked to tag a release:
 
 1. Rebase `main` to include new code from `development`.
-2. Increment the version in `manifest.json` by `0.1`.
-3. Create the Git tag on `main`, never on `development`.
+2. Increment the root `package.json` version according to SemVer and keep `package-lock.json` synchronized. Versions before the accepted MVP remain below `1.0.0`; the accepted MVP is `1.0.0`.
+3. Create a matching `v<version>` Git tag on `main`, never on `development`.
 4. Only then run build scripts.
 
 ## Security & Configuration
