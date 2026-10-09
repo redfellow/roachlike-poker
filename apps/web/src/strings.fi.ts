@@ -154,7 +154,7 @@ export const FI = {
 		claimCard: "VÄITE",
 		nextMove: "SEURAAVA SIIRTO",
 		cardBack: "ÄLÄ LUOTA KEHENKÄÄN.",
-		claim: (name: string, creature: string, changed?: boolean) => {
+		claim(name: string, creature: string, changed?: boolean) {
 			const capitalizedCreature = creature.charAt(0).toLocaleUpperCase("fi") + creature.slice(1);
 			const statement = changed === undefined ? `tämä on ${capitalizedCreature}` : changed ? `eiku se on ${capitalizedCreature}` : `olihan se ${capitalizedCreature}`;
 			return `${name} sanoo: ${statement}.`;
