@@ -6,6 +6,14 @@ export function selectNextAudio(variants: readonly string[], index: number): str
 	return selected;
 }
 
+export function selectRandomAudio(variants: readonly string[], random = Math.random): string {
+	if (variants.length === 0) { throw new Error("At least one audio variant is required."); }
+	const index = Math.min(variants.length - 1, Math.floor(Math.max(0, random()) * variants.length));
+	const selected = variants[index];
+	if (!selected) { throw new Error("Random audio variant selection returned no result."); }
+	return selected;
+}
+
 const buffers = new Map<string, Promise<AudioBuffer>>();
 const peaks = new Map<string, number>();
 let context: AudioContext | null = null;

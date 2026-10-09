@@ -4,18 +4,19 @@ import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
 import type { OpenRoomView, Reply, RoomAction, RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
-import { playNormalizedAudio, selectNextAudio } from "./audio";
+import { playNormalizedAudio, selectNextAudio, selectRandomAudio } from "./audio";
 import { FI } from "./strings.fi";
 import { AVAILABLE_THEMES, themeFor, type ThemeDefinition } from "./themes";
 import "./style.css";
 
 document.title = FI.documentTitle;
 
-const CARD_FLIP_VARIANTS = [
-	"/audio/card-flip-fast-01.mp3",
-	"/audio/card-flip-fast-02.mp3",
-	"/audio/card-flip-fast-03.mp3",
-] as const;
+const CARD_SEND_VARIANTS = ["/audio/card-send-01.mp3", "/audio/card-send-02.mp3"] as const;
+const CARD_PASS_VARIANTS = ["/audio/card-pass-01.mp3"] as const;
+const BELIEVE_VARIANTS = ["/audio/believe-01.mp3"] as const;
+const DISBELIEVE_VARIANTS = ["/audio/disbelieve-01.mp3"] as const;
+const CHALLENGE_REVEAL_VARIANTS = ["/audio/challenge-resolve-fast-01.mp3", "/audio/challenge-resolve-fast-02.mp3"] as const;
+const PENALTY_TRANSFER_VARIANTS = ["/audio/penalty-transfer-01.mp3", "/audio/penalty-transfer-02.mp3"] as const;
 const WIN_VARIANTS = [
 	"/audio/game-win-01.mp3",
 	"/audio/game-win-02.mp3",
@@ -180,27 +181,36 @@ function ThemeSelector({ selected, host, locked, busy, select }: { selected: The
 		return <button type="button" className={`theme-option ${theme.className}${active ? " theme-option--selected" : ""}`} key={theme.id} disabled={!host || locked || busy} aria-pressed={active} onClick={() => select(theme.id)}><span className="theme-option__fan"><CreatureArt creature="torakka" themeId={theme.id} small /><CreatureArt creature="hamahakki" themeId={theme.id} small /></span><strong>{theme.name}</strong><small>{theme.id === "herrasmiespokeri" ? "Herrasmiehiä, promilleja ja klubin häpeää." : "Örkkejä, ötököitä ja huonoja ystäviä."}</small>{active && <b>{FI.lobby.themeSelected}</b>}</button>;
 	})}</div>{!host && <p className="fineprint">{FI.lobby.hostChoosesTheme}</p>}{locked && <p className="fineprint">{FI.lobby.themeLocked}</p>}</section>;
 }
+function randomCardFan(cards: readonly Creature[]): Creature[] {
+	const shuffled = [...cards];
+	for (let index = shuffled.length - 1; index > 0; index--) {
+		const target = Math.floor(Math.random() * (index + 1));
+		[shuffled[index], shuffled[target]] = [shuffled[target]!, shuffled[index]!];
+	}
+	return shuffled.slice(0, 4);
+}
 function LobbyCardPreview({ theme }: { theme: ThemeDefinition }): ReactElement | null {
 	const imageBased = Object.keys(theme.images).length > 0;
 	const cards = CREATURES.filter(creature => !imageBased || Boolean(theme.images[creature]));
-	const [index, setIndex] = useState(0);
+	const [fan, setFan] = useState(function () { return { cards: randomCardFan(cards), revision: 0 }; });
 	useEffect(function () {
-		setIndex(0);
-		if (cards.length < 2) { return; }
+		setFan(current => ({ cards: randomCardFan(cards), revision: current.revision + 1 }));
+		if (cards.length <= 4) { return; }
 		let timer: number | undefined;
 		function stop(): void { if (timer !== undefined) { window.clearInterval(timer); timer = undefined; } }
 		function start(): void {
 			stop();
-			if (!document.hidden) { timer = window.setInterval(() => setIndex(current => (current + 1) % cards.length), 5000); }
+			if (!document.hidden) { timer = window.setInterval(() => setFan(current => ({ cards: randomCardFan(cards), revision: current.revision + 1 })), 6000); }
 		}
 		function visibilityChanged(): void { start(); }
 		start();
 		document.addEventListener("visibilitychange", visibilityChanged);
 		return function () { stop(); document.removeEventListener("visibilitychange", visibilityChanged); };
 	}, [theme.id, cards.length]);
-	const creature = cards[index % cards.length];
-	if (!creature) { return null; }
-	return <div className="mini-card" data-creature={creature} aria-hidden="true"><span className="mini-card__art" key={`${theme.id}:${creature}`}><CreatureArt creature={creature} themeId={theme.id} /></span><p>{theme.labels[creature]}</p></div>;
+	if (!fan.cards.length) { return null; }
+	return <div className="mini-card-fan" key={`${theme.id}:${fan.revision}`} aria-hidden="true">{fan.cards.map(function (creature) {
+		return <div className="mini-card" data-creature={creature} key={creature}><span className="mini-card__art"><CreatureArt creature={creature} themeId={theme.id} /></span><p>{theme.labels[creature]}</p></div>;
+	})}</div>;
 }
 function App(): ReactElement {
 	const pathname = usePathname();
@@ -213,6 +223,7 @@ function App(): ReactElement {
 	const [rules, setRules] = useState(false);
 	const [creating, setCreating] = useState(false);
 	const [openRooms, setOpenRooms] = useState<OpenRoomView[]>([]);
+	const [resumeRoomId, setResumeRoomId] = useState("");
 	const [joinTheme, setJoinTheme] = useState<ThemeRef | undefined>();
 	const [musicLevel, setMusicLevel] = useMusicLevel();
 	const landingTheme = themeFor(joinTheme);
@@ -239,6 +250,21 @@ function App(): ReactElement {
 		void refresh(); const timer = setInterval(() => void refresh(), 5000);
 		return function () { active = false; clearInterval(timer); };
 	}, [roomId]);
+	useEffect(function () {
+		setResumeRoomId("");
+		if (roomId) { return; }
+		const previousRoomId = stored("torakka:room");
+		if (!previousRoomId) { return; }
+		const controller = new AbortController();
+		void fetch(`/api/rooms/${previousRoomId}/appearance`, { signal: controller.signal }).then(function (response) {
+			if (response.ok) { setResumeRoomId(previousRoomId); return; }
+			if (response.status === 404) {
+				localStorage.removeItem("torakka:room");
+				localStorage.removeItem(`torakka:token:${previousRoomId}`);
+			}
+		}).catch(function () { return; });
+		return function () { controller.abort(); };
+	}, [roomId]);
 	async function createRoom(): Promise<void> {
 		setCreating(true); setError("");
 		try {
@@ -253,7 +279,7 @@ function App(): ReactElement {
 	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} musicLevel={musicLevel} setMusicLevel={setMusicLevel} returnToJoin={() => setJoinedRoomId("")} />; }
 	return <div className={`landing ${landingTheme.className}`}><BackgroundMusic active level={musicLevel} /><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><MusicVolume level={musicLevel} setLevel={setMusicLevel} /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
 		<main className="landing__main"><div className="landing__copy"><p className="eyebrow">{FI.landing.eyebrow}</p><h1>{FI.landing.headingFirst}<br /><em>{FI.landing.headingEmphasis}</em><br />{FI.landing.headingLast}</h1><p className="lede">{landingTheme.landingLede}</p>
-			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoinedRoomId(roomId); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{stored("torakka:room") && <InternalLink className="button button--quiet" href={`/r/${stored("torakka:room")}`}>{FI.landing.resumeRoom}</InternalLink>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <InternalLink href={`/r/${room.id}`} className={`open-room ${themeFor(room.themeId).className}`} key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span><b>{themeFor(room.themeId).name}</b> · {FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></InternalLink>)}</div></section>}</>}
+			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoinedRoomId(roomId); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{resumeRoomId && <InternalLink className="button button--quiet" href={`/r/${resumeRoomId}`}>{FI.landing.resumeRoom}</InternalLink>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <InternalLink href={`/r/${room.id}`} className={`open-room ${themeFor(room.themeId).className}`} key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span><b>{themeFor(room.themeId).name}</b> · {FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></InternalLink>)}</div></section>}</>}
 			{error && <p role="alert" className="error">{error}</p>}
 		</div><div className="landing__art" aria-hidden="true"><div className="hero-card hero-card--back"><span>{landingTheme.cardBack}</span><CreatureArt creature="hamahakki" themeId={landingTheme.id} /></div><div className="hero-card"><span className="eyebrow">{FI.landing.frontCard}</span><CreatureArt creature="torakka" themeId={landingTheme.id} /><strong>{landingTheme.labels.torakka}</strong><span className="hero-card__serial">{landingTheme.cardSerial}</span></div><span className="stamp">{FI.landing.stampFirst}<br />{FI.landing.stampSecond}</span></div></main>
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules theme={landingTheme} /></Modal>}</div>;
@@ -424,6 +450,10 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		if (isNewHandoff && latestClaim) {
 			setNextTurnSeat(null);
 			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
+			if (!muted) {
+				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
+				void playNormalizedAudio(selectRandomAudio(variants), 0.48).catch(function () { return; });
+			}
 			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(handoffTimer); };
@@ -440,7 +470,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			return;
 		}
 		previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
-	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, reduced]);
+	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, muted, reduced]);
 	useEffect(function () {
 		if (!nextTurnSeat || result) { return; }
 		const timer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 2800);
@@ -499,17 +529,23 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const resolution = game.lastResolution;
 		if (!resolution || seen.current === resolution.id) { return; }
 		seen.current = resolution.id; setResult(true); setAnswerFlash(false);
-		if (!muted && (resolution.penaltyPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me || resolution.receiverPersonId === state.me)) {
-			const isLoss = resolution.penaltyPersonId === state.me;
-			const variants = isLoss ? LOSS_VARIANTS : WIN_VARIANTS;
-			const variant = selectNextAudio(variants, isLoss ? 0 : challengeSoundIndex.current);
-			challengeSoundIndex.current += 1;
-			playVariant(variant);
+		const audioTimers: number[] = [];
+		if (!muted && !resolution.cancelled) {
+			playVariant(selectRandomAudio(resolution.receiverBelieves ? BELIEVE_VARIANTS : DISBELIEVE_VARIANTS));
+			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(CHALLENGE_REVEAL_VARIANTS)), 300));
+			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(PENALTY_TRANSFER_VARIANTS)), 650));
+			if (resolution.penaltyPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me || resolution.receiverPersonId === state.me) {
+				const isLoss = resolution.penaltyPersonId === state.me;
+				const variants = isLoss ? LOSS_VARIANTS : WIN_VARIANTS;
+				const variant = selectNextAudio(variants, isLoss ? 0 : challengeSoundIndex.current);
+				challengeSoundIndex.current += 1;
+				audioTimers.push(window.setTimeout(() => playVariant(variant), 1000));
+			}
 		}
 		const resultTimer = setTimeout(() => setResult(false), reduced ? 120 : 2200);
 		const flashStartTimer = setTimeout(() => setAnswerFlash(!reduced), reduced ? 100 : 2100);
 		const flashEndTimer = setTimeout(() => setAnswerFlash(false), reduced ? 120 : 7800);
-		return function () { clearTimeout(resultTimer); clearTimeout(flashStartTimer); clearTimeout(flashEndTimer); };
+		return function () { clearTimeout(resultTimer); clearTimeout(flashStartTimer); clearTimeout(flashEndTimer); audioTimers.forEach(timer => clearTimeout(timer)); };
 	}, [game.lastResolution?.id, muted, reduced, state.me]);
 	const resolution = game.lastResolution;
 	const personalOutcomePositive = resolution && (resolution.receiverPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me) ? resolution.penaltyPersonId !== state.me : null;
@@ -551,7 +587,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			return <article key={seat.id} data-seat-id={seat.id} className={`seat${required === seat.id && game.phase !== "ended" ? " seat--active" : ""}${!member?.online || seat.removed ? " seat--offline" : ""}${selectedTarget === seat.id ? " seat--selected" : ""}${targetable ? " seat--targetable" : ""}${routeSeatIds.has(seat.id) ? " seat--on-route" : ""}${claim?.senderId === seat.id ? " seat--claim-sender" : ""}${claim?.receiverId === seat.id ? " seat--claim-receiver" : ""}${handoff?.from === seat.id ? " seat--sending" : ""}${handoff?.to === seat.id ? " seat--receiving" : ""}${nextTurnSeat === seat.id ? " seat--next-turn" : ""}${result && resolution?.penaltySeatId === seat.id ? " seat--penalty" : ""}`}>
 				<button type="button" className="seat__target" disabled={!targetable || busy} aria-label={targetable ? FI.actions.choosePlayer(seat.name) : undefined} aria-pressed={selectedTarget === seat.id} onClick={() => setSelectedTarget(seat.id)}>
 					<div className="seat__identity"><Avatar name={seat.name} gentleman={theme.id === "herrasmiespokeri"} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong>{(seat.removed || !member?.online || required === seat.id && game.phase !== "ended") && <small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : FI.table.thinking}</small>}</span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
-					<div className="seat__display">{CREATURES.map(function (creature) { const count = seat.display.filter(c => c.creature === creature).length; return count ? <span title={theme.labels[creature]} className={`penalty${count >= game.threshold - 1 ? " penalty--danger" : ""}`} key={creature}><CreatureArt creature={creature} themeId={theme.id} small /><b>{count}</b></span> : null; })}{!seat.display.length && <span className="seat__clean">{theme.cleanTable}</span>}</div>
+					<div className="seat__display">{CREATURES.map(function (creature) { const count = seat.display.filter(c => c.creature === creature).length; return count ? <span title={theme.labels[creature]} data-creature={creature} className={`penalty${count >= game.threshold - 1 ? " penalty--danger" : ""}`} key={creature}><CreatureArt creature={creature} themeId={theme.id} small counter /><b>{count}</b></span> : null; })}{!seat.display.length && <span className="seat__clean">{theme.cleanTable}</span>}</div>
 				</button>
 				{!seat.removed && game.phase !== "ended" && <div className="seat__controls">{state.hostId === state.me && !member?.online && <button className="text-button" onClick={function () { if (confirm(FI.table.confirmRemove)) { void command({ kind: "remove", seatId: seat.id }); } }}>{FI.table.removeAndDeal}</button>}{!me && (!member?.online || afk) && <button className="text-button" onClick={() => command({ kind: "request-seat", seatId: seat.id })}>{FI.table.requestSeat}</button>}</div>}
 			</article>;
@@ -561,7 +597,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 				{game.challenge ? <><div className="claim-presentation"><div data-creature={game.challenge.card?.creature} className={`playing-card${game.challenge.card ? " playing-card--known" : ""}`}>{game.challenge.card ? <><CreatureArt creature={game.challenge.card.creature} themeId={theme.id} /><strong>{theme.labels[game.challenge.card.creature]}</strong></> : <><span>✳</span><small>{theme.cardBack}</small></>}</div><span className="claim-presentation__arrow" aria-hidden="true">→</span><div data-creature={claim!.creature} className="claimed-card" aria-label={FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"))}><small>{FI.table.claimCard}</small><CreatureArt creature={claim!.creature} themeId={theme.id} small /><strong>{theme.labels[claim!.creature]}</strong></div></div><h2>{FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"))}</h2><p><strong>{claimReceiver}n</strong> {FI.table.claimRecipient}</p></> : <><div className="table-mark">✳</div><h2>{FI.table.startTurn(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</h2><p>{FI.table.startPrompt}</p></>}
 				{result && resolution && <div className="resolution" role="status"><div className={`decision-token${resolution.receiverBelieves ? " decision-token--believe" : " decision-token--disbelieve"}`}><span>{resolution.receiverBelieves ? "✓" : "✕"}</span>{resolution.receiverBelieves ? FI.table.believe : FI.table.disbelieve}</div><div className="showdown"><div data-creature={resolution.claims.at(-1)!.creature} className="showdown__card showdown__card--claim"><small>VÄITE</small><CreatureArt creature={resolution.claims.at(-1)!.creature} themeId={theme.id} /><strong>{theme.labels[resolution.claims.at(-1)!.creature]}</strong></div><div data-creature={resolution.card.creature} className="showdown__card showdown__card--truth"><small>KORTTI</small><CreatureArt creature={resolution.card.creature} themeId={theme.id} /><strong>{theme.labels[resolution.card.creature]}</strong></div><span className={`showdown__stamp${resolution.claims.at(-1)!.creature === resolution.card.creature ? " showdown__stamp--true" : " showdown__stamp--false"}`}>{resolution.claims.at(-1)!.creature === resolution.card.creature ? "TOTTA" : "VALHE"}</span></div><p>{resolution.cancelled ? FI.table.cancelledRound : FI.table.takesCard(game.seats.find(s => s.id === resolution.penaltySeatId)?.name ?? "")}</p><span>{emoji} {outcome.length ? FI.round.correctAudienceGuesses(outcome.filter(Boolean).length, outcome.length) : ""}</span>{game.phase === "initiation" && <strong className="resolution__next">{FI.table.nextPlayer(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</strong>}</div>}
 			</section>
-			<Actions theme={theme} key={`${game.phase}:${game.challenge?.id ?? ""}:${game.challenge?.claims.length ?? 0}:${game.activeSeatId}`} game={game} meId={me?.id ?? null} command={command} busy={busy || result} muted={muted} card={selectedCard} target={selectedTarget} setCard={function (creature) { setSelectedCard(creature); setSelectedTarget(""); }} setTarget={setSelectedTarget} />
+			<Actions theme={theme} key={`${game.phase}:${game.challenge?.id ?? ""}:${game.challenge?.claims.length ?? 0}:${game.activeSeatId}`} game={game} meId={me?.id ?? null} command={command} busy={busy || result} card={selectedCard} target={selectedTarget} setCard={function (creature) { setSelectedCard(creature); setSelectedTarget(""); }} setTarget={setSelectedTarget} />
 			{game.challenge?.canPredict && <div className="predictions"><span>{FI.table.secretPrediction} <small>{FI.table.predictionReveal}</small></span><button className={`button${game.challenge.prediction === true ? " button--selected" : ""}`} disabled={busy} onClick={() => command({ kind: "game", action: { type: "predict", challengeId: game.challenge!.id, claimIndex: game.challenge!.claims.length - 1, believes: true } })}>{FI.table.believe}</button><button className={`button${game.challenge.prediction === false ? " button--selected" : ""}`} disabled={busy} onClick={() => command({ kind: "game", action: { type: "predict", challengeId: game.challenge!.id, claimIndex: game.challenge!.claims.length - 1, believes: false } })}>{FI.table.disbelieve}</button></div>}
 		</>}
 		{game.lastResolution && game.phase !== "ended" && <details className="last-round"><summary>{FI.table.previousRound}</summary><RoundDetails theme={theme} resolution={game.lastResolution} names={Object.fromEntries(game.scores.map(s => [s.personId, s.name]))} /></details>}
@@ -569,9 +605,8 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		{showTutorial && <Modal close={dismissTutorial}><div className="tutorial"><h2>{FI.table.tutorialTitle}</h2><p>{tutorial === "start" ? theme.startHint : FI.table.responseHint}</p><button className="button button--primary" onClick={dismissTutorial}>{FI.table.dismissHint}</button></div></Modal>}
 	</main>;
 }
-function Actions({ theme, game, meId, command, busy, muted, card, target, setCard, setTarget }: { theme: ThemeDefinition; game: GameView; meId: string | null; command: (action: RoomAction) => Promise<void>; busy: boolean; muted: boolean; card: Creature | null; target: string; setCard: (creature: Creature) => void; setTarget: (target: string) => void }): ReactElement {
+function Actions({ theme, game, meId, command, busy, card, target, setCard, setTarget }: { theme: ThemeDefinition; game: GameView; meId: string | null; command: (action: RoomAction) => Promise<void>; busy: boolean; card: Creature | null; target: string; setCard: (creature: Creature) => void; setTarget: (target: string) => void }): ReactElement {
 	const [claim, setClaim] = useState<Creature | "">("");
-	const cardSoundIndex = useRef(0);
 	useEffect(function () {
 		setClaim("");
 	}, [target]);
@@ -582,11 +617,6 @@ function Actions({ theme, game, meId, command, busy, muted, card, target, setCar
 	const truthfulCreature = passing ? game.challenge?.card?.creature : card;
 	const claimAction = !claim ? FI.actions.chooseClaim : claim === truthfulCreature ? FI.actions.chooseTruth : FI.actions.chooseBluff;
 	function submitClaim(selectedClaim: Creature): void {
-		if (!muted) {
-			const variant = selectNextAudio(CARD_FLIP_VARIANTS, cardSoundIndex.current);
-			cardSoundIndex.current += 1;
-			void playNormalizedAudio(variant, 0.7).catch(function () { return; });
-		}
 		void command({ kind: "game", action: passing ? { type: "pass", targetId: target, creature: selectedClaim } : { type: "send", cardId: game.hand.find(item => item.creature === card)!.id, targetId: target, creature: selectedClaim } });
 		setTarget("");
 	}
@@ -599,7 +629,7 @@ function Actions({ theme, game, meId, command, busy, muted, card, target, setCar
 		<div className="hand-area__heading"><span className="eyebrow">{meId ? FI.actions.ownHand : FI.actions.spectatorHand}</span></div>
 		{meId && <div className="hand">{CREATURES.map(function (creature) {
 			const count = game.hand.filter(c => c.creature === creature).length;
-			return count ? <button key={creature} className={`hand-card hand-card--${creature}${theme.images[creature] ? " hand-card--image" : ""}${card === creature ? " hand-card--selected" : ""}`} disabled={!preparing || passing || busy} onClick={() => setCard(creature)} aria-pressed={card === creature}><span className="hand-card__count">×{count}</span><CreatureArt creature={creature} themeId={theme.id} /><strong>{theme.labels[creature]}</strong></button> : null;
+			return count ? <button key={creature} data-creature={creature} className={`hand-card hand-card--${creature}${theme.images[creature] ? " hand-card--image" : ""}${card === creature ? " hand-card--selected" : ""}`} disabled={!preparing || passing || busy} onClick={() => setCard(creature)} aria-pressed={card === creature}><span className="hand-card__count">×{count}</span><CreatureArt creature={creature} themeId={theme.id} /><strong>{theme.labels[creature]}</strong></button> : null;
 		})}{!game.hand.length && <p>{FI.actions.emptyHand}</p>}</div>}
 		{target && <fieldset className="claim-picker claim-picker--overlay"><legend>{FI.actions.claimLabel}</legend><p>{FI.actions.claimTo(game.seats.find(s => s.id === target)?.name ?? "")}</p><div className="claim-picker__choices">{CREATURES.map(function (creature) { const truthful = creature === truthfulCreature; const selected = claim === creature; return <button type="button" key={creature} data-creature={creature} className={`claim-card${selected ? " claim-card--selected" : ""}${truthful ? " claim-card--truth" : ""}`} aria-pressed={selected} onClick={() => selectClaim(creature)} disabled={busy}><CreatureArt creature={creature} themeId={theme.id} small /><span>{theme.labels[creature]}</span>{truthful && <small>{FI.actions.trueChoice}</small>}{selected && <small className="claim-card__confirm">{FI.actions.clickAgain}</small>}</button>; })}</div><div className="claim-picker__actions"><button type="button" className="button button--quiet" onClick={() => setTarget("")}>{FI.actions.changeTarget}</button><button className="button button--primary" disabled={busy || !claim || (!passing && !card)} onClick={function () { if (claim) { submitClaim(claim); } }}>{claimAction}</button></div></fieldset>}
 	</section>;

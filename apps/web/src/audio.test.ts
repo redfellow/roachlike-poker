@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizationGain, selectNextAudio } from "./audio";
+import { normalizationGain, selectNextAudio, selectRandomAudio } from "./audio";
 
 describe("selectNextAudio", function () {
 	it("rotates through every card-flip variant without repeating until all are used", function () {
@@ -28,6 +28,15 @@ describe("selectNextAudio", function () {
 
 		expect(selectNextAudio(cardVariants, 1)).toBe(cardVariants[1]);
 		expect(selectNextAudio(challengeVariants, 1)).toBe(challengeVariants[1]);
+	});
+});
+
+describe("selectRandomAudio", function () {
+	it("maps the random value across the approved variants", function () {
+		const variants = ["first.mp3", "second.mp3", "third.mp3"];
+		expect(selectRandomAudio(variants, () => 0)).toBe("first.mp3");
+		expect(selectRandomAudio(variants, () => 0.5)).toBe("second.mp3");
+		expect(selectRandomAudio(variants, () => 0.999)).toBe("third.mp3");
 	});
 });
 

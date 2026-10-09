@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="16" fill="#12131C"/>
+  <!-- Head & Neck Silhouette -->
+  <path d="M 30,90 L 30,75 C 30,68 36,62 44,60 C 44,54 42,48 40,44 C 36,44 34,40 36,36 C 38,32 44,32 48,34 C 54,34 60,38 64,46 C 68,54 66,64 60,70 L 60,90 Z" fill="#E2E8F0"/>
+  <!-- Tall Bold Mohawk -->
+  <path d="M 44,32 C 40,24 38,12 42,8 C 48,16 50,14 54,10 C 58,18 60,16 64,12 C 68,20 68,24 64,36 Z" fill="#FF0055"/>
+  <!-- Glasses outline for facial clarity -->
+  <path d="M 40,42 H 54 V 48 H 40 Z" fill="#12131C"/>
+  <line x1="54" y1="44" x2="62" y2="44" stroke="#12131C" stroke-width="2"/>
+</svg>

@@ -3,8 +3,12 @@ import { LABELS, type Creature, type ThemeId } from "@torakka/game";
 import { themeFor } from "./themes";
 
 const COLORS: Readonly<Record<Creature, string>> = { torakka: "#789448", lepakko: "#b299d1", karpanen: "#a5bd87", sammakko: "#b6ce74", rotta: "#d2a7a2", skorpioni: "#ecab68", hamahakki: "#aeafa4", lude: "#b5bd66" };
-export function CreatureArt({ creature, small = false, themeId = "orkkipokka" }: { creature: Creature; small?: boolean; themeId?: ThemeId }): ReactElement {
+export function CreatureArt({ creature, small = false, counter = false, themeId = "orkkipokka" }: { creature: Creature; small?: boolean; counter?: boolean; themeId?: ThemeId }): ReactElement {
 	const theme = themeFor(themeId);
+	const icon = counter ? theme.icons[creature] : undefined;
+	if (icon) {
+		return <span className="creature creature--small creature--icon" role="img" aria-label={theme.labels[creature]}><img src={icon} alt="" /></span>;
+	}
 	if (themeId === "herrasmiespokeri") {
 		const source = theme.images[creature];
 		return <span className={`creature creature--portrait${small ? " creature--small" : ""}`} role="img" aria-label={theme.labels[creature]}>{source ? <img src={source} alt="" /> : <span className="creature__placeholder"><b>HMP</b><small>HAHMO TULOSSA</small></span>}</span>;

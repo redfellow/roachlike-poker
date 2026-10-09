@@ -8,6 +8,7 @@ export interface ThemeDefinition {
 	brand: { first: string; second: string; label: string; documentTitle: string };
 	labels: Readonly<Record<Creature, string>>;
 	images: Partial<Record<Creature, string>>;
+	icons: Partial<Record<Creature, string>>;
 	cardBack: string;
 	threshold: (count: number) => string;
 	matchingLoss: (count: number) => string;
@@ -66,7 +67,7 @@ const themes: Readonly<Record<ThemeId, ThemeDefinition>> = {
 	orkkipokka: {
 		id: "orkkipokka", name: "Örkkipokka", version: 1, className: "theme--orkkipokka",
 		brand: { first: "ÖRKKI", second: "POKKA", label: "Örkkipokka etusivu", documentTitle: "Örkkipokka — älä luota kehenkään" },
-		labels: LABELS, images: {}, cardBack: "ÄLÄ LUOTA KEHENKÄÄN.", threshold: count => `${count} samaa = örkkikanta räjähti`, matchingLoss: count => `${count} samaa örkkiä. Luonto voitti.`,
+		labels: LABELS, images: {}, icons: {}, cardBack: "ÄLÄ LUOTA KEHENKÄÄN.", threshold: count => `${count} samaa = örkkikanta räjähti`, matchingLoss: count => `${count} samaa örkkiä. Luonto voitti.`,
 		chooseCardType: "Valitse örkki", startHint: "Valitse omista korteista örkki, sitten kohde ja väite. Vain Lähetä paljastaa väitteen muille.",
 		historyTitle: "Pöydän likainen historia", roundHistoryTitle: "Kierros kierrokselta", rulesFirst: "Valitse kortti, uhri ja örkki, jota väität kortin esittävän. Totuus on vapaaehtoinen.", rulesLoss: "Neljä samaa örkkiä pöydässäsi: hävisit. Samoin käy, jos sinun pitäisi aloittaa, mutta kätesi on tyhjä.", landingLede: "Örkki vai täyttä paskaa? Lue kavereidesi naamoja, siirrä ongelma eteenpäin ja pidä oma pokkasi.", cardSerial: "01 / 08 — EPÄILYTTÄVÄ ÖRKKI", cleanTable: "Ei vielä örkkejä pöydässä.", rulesVisibility: "Muiden kädet ovat salaisia. Pöydän kortit, käsien koot ja kortin kulkureitti näkyvät kaikille. Sivusta voit arvata väitteen totuutta: oikea arvaus tuo lisäpisteen.", achievementCopy: {},
 	},
@@ -75,6 +76,7 @@ const themes: Readonly<Record<ThemeId, ThemeDefinition>> = {
 		brand: { first: "HERRASMIES", second: "POKERI", label: "Herrasmiespokeri etusivu", documentTitle: "Herrasmiespokeri — klubin häpeällisin ilta" },
 		labels: { torakka: "Härvääjä", lepakko: "Kiltti", karpanen: "Tilasto", sammakko: "Murre", rotta: "Lurkki", skorpioni: "Viilaaja", hamahakki: "Nippeli", lude: "Pamppu" },
 		images: { torakka: "/themes/herrasmiespokeri/card-faces/harvaaja.png", lepakko: "/themes/herrasmiespokeri/card-faces/kiltti.png", karpanen: "/themes/herrasmiespokeri/card-faces/tilasto.png", sammakko: "/themes/herrasmiespokeri/card-faces/murre.png", rotta: "/themes/herrasmiespokeri/card-faces/lurkki.png", skorpioni: "/themes/herrasmiespokeri/card-faces/viilaaja.png", hamahakki: "/themes/herrasmiespokeri/card-faces/nippeli.png", lude: "/themes/herrasmiespokeri/card-faces/pamppu.png" },
+		icons: { torakka: "/themes/herrasmiespokeri/card-icons/harvaaja.png", lepakko: "/themes/herrasmiespokeri/card-icons/kiltti.png", karpanen: "/themes/herrasmiespokeri/card-icons/tilasto.png", sammakko: "/themes/herrasmiespokeri/card-icons/murre.png", rotta: "/themes/herrasmiespokeri/card-icons/lurkki.png", skorpioni: "/themes/herrasmiespokeri/card-icons/viilaaja.png", hamahakki: "/themes/herrasmiespokeri/card-icons/nippeli.png", lude: "/themes/herrasmiespokeri/card-icons/pamppu.png" },
 		cardBack: "HMP", threshold: count => `${count} promillea = taju lähti`, matchingLoss: count => `${count} promillea. Taju lähti.`,
 		chooseCardType: "Valitse herrasmies", startHint: "Valitse omista korteista herrasmies, sitten kohde ja väite. Vain Lähetä paljastaa väitteen muille.",
 		historyTitle: "Klubin häpeäkirja", roundHistoryTitle: "Ilta pöytäkirjassa", rulesFirst: "Valitse kortti, uhri ja herrasmies, jota väität kortin esittävän. Totuus on vapaaehtoinen.", rulesLoss: "Neljä promillea vei tajun. Kaksinpelissä raja on viisi. Samoin käy, jos sinun pitäisi aloittaa, mutta kätesi on tyhjä.", landingLede: "Herrasmies vai täyttä paskaa? Lue pöytäseurueen ilmeitä, siirrä lasku eteenpäin ja säilytä arvokkuutesi.", cardSerial: "01 / 08 — EPÄILYTTÄVÄ HERRASMIES", cleanTable: "Ei vielä herrasmiehiä pöydässä.", rulesVisibility: "Muiden kädet ovat salaisia. Pöydän herrasmiehet, käsien koot ja kortin kulkureitti näkyvät kaikille. Sivusta voit arvioida puheen todenperäisyyttä: oikea arvio tuo lisäpisteen.", achievementCopy: gentlemanAchievements,

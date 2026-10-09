@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="16" fill="#181113"/>
+  <!-- Prominent, Thick Typography Comma -->
+  <path d="M 42,20 C 58,20 68,30 68,46 C 68,66 48,84 34,88 L 28,76 C 42,70 52,58 52,48 C 48,50 44,50 40,48 C 30,44 26,34 30,26 C 33,22 37,20 42,20 Z" fill="#E2E8F0" stroke="#FFFFFF" stroke-width="2"/>
+</svg>

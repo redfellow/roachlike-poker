@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <rect width="100" height="100" rx="16" fill="#0F172A"/>
+  <!-- Handle -->
+  <path d="M 62,38 H 76 C 82,38 82,72 62,72" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round"/>
+  <!-- Mug Body & Amber Beer -->
+  <rect x="24" y="34" width="40" height="48" rx="6" fill="#FFB300" stroke="#FFFFFF" stroke-width="5"/>
+  <!-- Beer Glass Detail Lines -->
+  <line x1="34" y1="42" x2="34" y2="74" stroke="#FFA000" stroke-width="4" stroke-linecap="round"/>
+  <line x1="54" y1="42" x2="54" y2="74" stroke="#FFA000" stroke-width="4" stroke-linecap="round"/>
+  <!-- Foam Top -->
+  <path d="M 20,36 C 20,26 30,26 34,28 C 38,22 48,22 52,28 C 56,24 66,24 68,34 C 70,38 64,42 62,40 C 22,40 22,38 20,36 Z" fill="#FFFFFF"/>
+</svg>
