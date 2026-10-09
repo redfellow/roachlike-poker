@@ -193,8 +193,13 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			return;
 		}
 		if (action.kind === "set-theme") {
-			requireCondition(actor === room.hostId && !game && room.countdownAt === null, "Vain isäntä voi vaihtaa teemaa ennen lähtölaskentaa.");
+			requireCondition(actor === room.hostId && (room.game !== null || room.countdownAt === null), "Vain isäntä voi vaihtaa teemaa lähtölaskennan ulkopuolella.");
 			room.theme = { id: action.themeId, version: 1 };
+			if (room.game) {
+				room.game.theme = structuredClone(room.theme);
+				const recap = room.history.find(item => item.id === room.game!.id);
+				if (recap) { recap.theme = structuredClone(room.theme); }
+			}
 			room.notice = action.themeId === "herrasmiespokeri" ? "Herrasmiespokeri on katettu." : "Örkkipokka on katettu.";
 			return;
 		}
