@@ -373,7 +373,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				const command = parsed.data;
 				const original = rooms.get(identity.roomId)!;
 				if (store.hasReceipt(original.id, identity.personId, command.id)) { acknowledge({ ok: true }); socket.emit("state", publicView(original, identity.personId)); return; }
-				if (original.revision !== command.revision) { socket.emit("state", publicView(original, identity.personId)); throw new GameError("Tilanne muuttui. Tarkista valinta ja yritä uudelleen."); }
+				if (original.revision !== command.revision && command.action.kind !== "close-lobby") { socket.emit("state", publicView(original, identity.personId)); throw new GameError("Tilanne muuttui. Tarkista valinta ja yritä uudelleen."); }
 				const room = structuredClone(original);
 				mutate(room, identity.personId, command);
 				updatePrompt(room, promptKey(original.game)); rememberEnd(room);

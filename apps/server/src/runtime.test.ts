@@ -383,6 +383,21 @@ describe("authoritative room transport", function () {
 		expect(guestReply.ok).toBe(false);
 		guestSocket.disconnect();
 	});
+	it("allows the host to close an ended game with a stale client revision", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		const guest = await connect(url, roomId, "B");
+		await synced([host, guest]); await act(host, { kind: "ready", ready: true });
+		await synced([host, guest]); await act(guest, { kind: "ready", ready: true });
+		await waitFor(() => Boolean(host.state!.game));
+		const staleRevision = host.state!.revision;
+		expect((await act(host, { kind: "end" })).ok).toBe(true);
+		await waitFor(() => host.state!.game?.phase === "ended");
+		const reply = await host.socket.emitWithAck("command", { id: randomUUID(), revision: staleRevision, action: { kind: "close-lobby" } }) as Reply;
+		expect(reply.ok).toBe(true);
+		await waitFor(() => runtime.store.all().length === 0);
+	});
 	it("removes a room when all online players disconnect", async function () {
 		const { runtime, url } = await start();
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
