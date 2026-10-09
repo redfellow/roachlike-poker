@@ -50,6 +50,8 @@ PRs should explain purpose, link relevant issues, list validation, and include s
 
 When asked to suggest commits, always check the files, also consider unstaged.
 
+Never mark commits Co-authored-by you.
+
 ## Releasing New Versions
 
 When asked to tag a release:

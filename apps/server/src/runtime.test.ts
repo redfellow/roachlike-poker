@@ -93,6 +93,30 @@ describe("authoritative room transport", function () {
 		expect((await act(host, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(false);
 		expect(host.state!.theme).toEqual({ id: "orkkipokka", version: 1 });
 	});
+	it("lets the host change theme during play and after the match ends", async function () {
+		const { runtime, url } = await start();
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		const guest = await connect(url, roomId, "B");
+		await synced([host, guest]); expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await synced([host, guest]); expect((await act(guest, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game && guest.state!.game));
+		expect((await act(guest, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(false);
+		expect((await act(host, { kind: "set-theme", themeId: "herrasmiespokeri" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect(host.state!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
+		expect(host.state!.game!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
+		expect(guest.state!.game!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
+		expect((await act(host, { kind: "end" })).ok).toBe(true);
+		await waitFor(() => host.state!.game!.phase === "ended");
+		const matchId = host.state!.game!.id;
+		expect(host.state!.history.find(item => item.id === matchId)!.theme).toEqual({ id: "herrasmiespokeri", version: 1 });
+		expect((await act(host, { kind: "set-theme", themeId: "orkkipokka" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect(host.state!.theme).toEqual({ id: "orkkipokka", version: 1 });
+		expect(host.state!.game!.theme).toEqual({ id: "orkkipokka", version: 1 });
+		expect(host.state!.history.find(item => item.id === matchId)!.theme).toEqual({ id: "orkkipokka", version: 1 });
+	});
 	it("starts a game, isolates spectators, rejects stale actions and deduplicates retries", async function () {
 		const { runtime, url } = await start();
 		const response = await runtime.app.inject({ method: "POST", url: "/api/rooms" });
@@ -164,7 +188,7 @@ describe("authoritative room transport", function () {
 		const { runtime, url } = await start(":memory:", { countdownMs: 5000, random: function () { return 0; } });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const host = await connect(url, roomId, "A");
-		const botName = "🤖 Pelti-Pena";
+		const botName = "🤖 Ruttunen";
 		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
 		await waitFor(() => host.state!.members.some(m => m.name === botName));
 		const bot = host.state!.members.find(m => m.name === botName)!;
@@ -183,7 +207,7 @@ describe("authoritative room transport", function () {
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const host = await connect(url, roomId, "A");
 		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
-		await waitFor(() => host.state!.members.some(member => member.name === "🤖 Bluffi-Börje"));
+		await waitFor(() => host.state!.members.some(member => member.name === "🤖 Raksutin"));
 	});
 	it("starts the game when two computer players are ready", async function () {
 		const { runtime, url } = await start();
