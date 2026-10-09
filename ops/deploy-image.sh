@@ -38,12 +38,35 @@ if ! command -v docker >/dev/null 2>&1; then
 	exit 1
 fi
 
+unlock_registry_credentials()
+{
+	if ! command -v docker-credential-pass >/dev/null 2>&1; then
+		return
+	fi
+
+	if [ ! -t 0 ]; then
+		echo "GHCR credentials may require an interactive terminal. Run this command directly in the deployment terminal." >&2
+		return
+	fi
+
+	GPG_TTY="$(tty)"
+	export GPG_TTY
+	gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1 || true
+
+	echo "Unlocking GHCR credentials (enter the GPG passphrase if prompted)..."
+	if ! printf '%s' 'ghcr.io' | docker-credential-pass get >/dev/null; then
+		echo "Could not unlock the stored GHCR credentials." >&2
+		exit 1
+	fi
+}
+
 compose()
 {
 	TORAKKA_IMAGE="$image" docker compose -f compose.yaml -f compose.registry.yaml "$@"
 }
 
 echo "Deploying $image"
+unlock_registry_credentials
 compose config --quiet
 compose pull game
 compose up -d --no-build --force-recreate --wait game

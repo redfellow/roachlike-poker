@@ -13,17 +13,17 @@ Use this for a test build without a Git tag or GitHub Release.
 3. Select **Run workflow**, choose `main`, and run it.
 4. Wait for the workflow to finish successfully.
 
-The workflow publishes the newest development image as `:dev`. It also creates a commit-specific tag internally for auditing, but normal deployment does not require copying it.
+The workflow publishes the newest development image as `:dev`.
 
 ### Deploy
 
-On the deployment machine, from the repository directory:
+In an interactive terminal on the deployment machine:
 
 ```sh
 npm run deploy:dev
 ```
 
-This pulls the current `:dev` image, recreates the game container, waits for it to become healthy, and prints the image that is running.
+If the private GHCR login is protected by the Docker `pass` credential store, the helper pauses for the GPG passphrase before pulling. It then recreates the game container, waits for it to become healthy, and prints the running image.
 
 ## Versioned Release
 
@@ -31,15 +31,10 @@ Use this for a named release such as `0.9.0`.
 
 ### Prepare
 
-Start from a clean, current `main` branch. Update both package files with one command:
+Start from a clean, current `main` branch:
 
 ```sh
 npm run release:prepare -- 0.9.0
-```
-
-Run the checks, commit the changed package files, and push:
-
-```sh
 npm run check
 git add package.json package-lock.json
 git commit -m "[CHORE] Prepare v0.9.0 release"
@@ -50,21 +45,19 @@ git push origin main
 
 1. Open **GitHub → Releases → Draft a new release**.
 2. Create the tag `v0.9.0` from `main`.
-3. Use `v0.9.0` as the release title and generate or write the release notes.
+3. Use `v0.9.0` as the release title.
 4. Publish the release.
 5. Wait for the automatically started **Publish container** workflow to finish successfully.
 
-The package version, Git tag, GitHub Release, and container version should all match. Publishing creates `:v0.9.0` and also updates the moving `:stable` tag.
+The package version, Git tag, GitHub Release, and container version should all match.
 
 ### Deploy
 
-On the deployment machine:
+In an interactive terminal on the deployment machine:
 
 ```sh
 npm run deploy:version -- 0.9.0
 ```
-
-Use the numbered version rather than `:stable` so it is always clear which release is running.
 
 ## Roll Back
 
