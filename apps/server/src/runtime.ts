@@ -15,7 +15,7 @@ interface Room {
 	waitingSeatId: string | null; promptAt: number | null; closed: boolean; open: boolean; theme: ThemeRef; notice: string; lastActivityAt: number;
 }
 export interface Runtime { app: FastifyInstance; io: Server; store: Store; close: () => Promise<void> }
-const COMPUTER_NAMES = ["🤖 Pelti-Pena", "🤖 Valhe-Veikko", "🤖 Kusetus 3000", "🤖 Bluffi-Börje", "🤖 Ruoste-Rane", "🤖 Paska-Pascal"] as const;
+const COMPUTER_NAMES = ["🤖 Ruttunen", "🤖 Virtanen", "🤖 Servola", "🤖 Laakeri", "🤖 Raksutin", "🤖 Vieterä", "🤖 Koneisto", "🤖 Roottori"] as const;
 const ROOM_CODE_FIRST = ["ahnas", "hilpea", "karvainen", "kiero", "likainen", "nokkela", "paatynyt", "ruma", "salainen", "uninen", "viekas", "ylpea"] as const;
 const ROOM_CODE_SECOND = ["baarin", "kellarin", "klubin", "kujan", "metsan", "mokin", "sataman", "saunan", "torin", "ullakon", "varaston", "viemarin"] as const;
 const ROOM_CODE_THIRD = ["herrasmies", "huijari", "lurjus", "molkky", "orvokki", "pokka", "rotta", "sankari", "sukka", "torakka", "velho", "orkki"] as const;
