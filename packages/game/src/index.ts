@@ -361,6 +361,8 @@ export function achievements(match: Match): Award[] {
 	const sentTargets = new Map<string, Set<string>>();
 	const displayCounts = new Map<string, Record<string, number>>();
 	const dangerAt = new Map<string, { personId: string; index: number }>();
+	const loneGeniusCandidates = new Set<string>();
+	const herdGraveCandidates = new Set<string>();
 	completed.forEach(function (r, index) {
 		const c = r.claims[r.claims.length - 1]!;
 		const lie = c.creature !== r.card.creature;
@@ -379,8 +381,8 @@ export function achievements(match: Match): Award[] {
 			const targets = sentTargets.get(item.senderPersonId) ?? new Set<string>(); targets.add(match.seats.find(seat => seat.id === item.receiverId)?.personId ?? ""); sentTargets.set(item.senderPersonId, targets);
 			if (claimIndex > 0) { passCounts.set(item.senderPersonId, (passCounts.get(item.senderPersonId) ?? 0) + 1); }
 			const correctPredictions = item.predictions.filter(prediction => prediction.believes === (item.creature === r.card.creature));
-			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 1) { add("lone-genius", [correctPredictions[0]!.personId]); }
-			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 0) { add("herd-grave", item.predictions.map(prediction => prediction.personId)); }
+			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 1) { loneGeniusCandidates.add(correctPredictions[0]!.personId); }
+			if (match.people.length >= 5 && item.predictions.length >= 3 && correctPredictions.length === 0) { item.predictions.forEach(prediction => herdGraveCandidates.add(prediction.personId)); }
 		}
 		const answers = answerCounts.get(r.receiverPersonId) ?? { total: 0, believes: 0, believedLies: 0 };
 		answers.total++; if (r.receiverBelieves) { answers.believes++; } if (r.receiverBelieves && lie) { answers.believedLies++; }
@@ -389,7 +391,7 @@ export function achievements(match: Match): Award[] {
 		if (r.claims.length > 1) {
 			const participants = new Set([...r.claims.map(item => item.senderPersonId), r.receiverPersonId]);
 			for (const personId of participants) { longChainCounts.set(personId, (longChainCounts.get(personId) ?? 0) + 1); }
-			if (activePeople.length >= 5 && activePeople.every(personId => participants.has(personId))) { add("full-circle", [...participants]); }
+			if (activePeople.length >= 5 && activePeople.every(personId => participants.has(personId))) { add("full-circle", [r.penaltyPersonId]); }
 			if (r.claims.length >= 3 && r.receiverPersonId === r.claims[0]!.senderPersonId) { add("return-sender", [r.receiverPersonId]); }
 		}
 		if (match.people.length >= 5 && lie && r.receiverBelieves && c.predictions.length >= 3 && c.predictions.every(prediction => !prediction.believes)) { add("cheap-bluff", [c.senderPersonId]); }
@@ -413,6 +415,14 @@ export function achievements(match: Match): Award[] {
 		displayCounts.set(r.penaltySeatId, counts);
 		if (counts[r.card.creature] === match.threshold - 1 && !dangerAt.has(r.penaltySeatId)) { dangerAt.set(r.penaltySeatId, { personId: r.penaltyPersonId, index }); }
 	});
+	const predictionLeader = function (key: "lone-genius" | "herd-grave", candidates: Set<string>, value: (score: Score) => number): void {
+		const eligible = stats.filter(score => candidates.has(score.personId));
+		const best = Math.max(0, ...eligible.map(value));
+		const leaders = eligible.filter(score => value(score) === best);
+		if (leaders.length === 1) { add(key, [leaders[0]!.personId]); }
+	};
+	predictionLeader("lone-genius", loneGeniusCandidates, score => score.correct);
+	predictionLeader("herd-grave", herdGraveCandidates, score => score.submitted - score.correct);
 	add("paranoid", [...paranoid].filter(([, n]) => n >= 4).map(([id]) => id));
 	add("truth", [...truth].filter(([, n]) => n >= 4).map(([id]) => id));
 	add("poker-grave", stats.filter(score => score.bluffs >= 5).map(score => score.personId));

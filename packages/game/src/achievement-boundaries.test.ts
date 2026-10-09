@@ -131,10 +131,18 @@ describe("achievement boundaries", function () {
 		expect(has(cheap, "cheap-bluff", "p0")).toBe(true);
 		const split = game(5);
 		split.resolutions.push(resolution(split, { predictions: [{ personId: "p2", believes: false }, { personId: "p3", believes: true }, { personId: "p4", believes: true }] }));
+		split.resolutions.push(resolution(split, { predictions: [{ personId: "p3", believes: false }, { personId: "p2", believes: true }, { personId: "p4", believes: true }] }));
+		split.resolutions.push(resolution(split, { predictions: [{ personId: "p2", believes: false }] }));
 		expect(has(split, "lone-genius", "p2")).toBe(true);
+		expect(has(split, "lone-genius", "p3")).toBe(false);
 		const herd = game(5);
 		herd.resolutions.push(resolution(herd, { predictions: allFooled }));
+		herd.resolutions.push(resolution(herd, { predictions: [{ personId: "p2", believes: true }] }));
 		expect(has(herd, "herd-grave", "p2")).toBe(true);
+		expect(has(herd, "herd-grave", "p3")).toBe(false);
+		const tied = game(5);
+		tied.resolutions.push(resolution(tied, { predictions: allFooled }));
+		expect(has(tied, "herd-grave")).toBe(false);
 		const tooSmall = game(4);
 		tooSmall.resolutions.push(resolution(tooSmall, { predictions: allFooled }));
 		expect(has(tooSmall, "crowd")).toBe(false);
@@ -153,6 +161,7 @@ describe("achievement boundaries", function () {
 		];
 		match.resolutions.push(resolution(match, { receiver: 0, claims }));
 		expect(has(match, "full-circle", "p0")).toBe(true);
+		expect(has(match, "full-circle", "p1")).toBe(false);
 		expect(has(match, "return-sender", "p0")).toBe(true);
 		expect(has(match, "chain", "p0")).toBe(true);
 		const equal = game(4);

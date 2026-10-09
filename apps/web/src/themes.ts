@@ -49,7 +49,7 @@ const gentlemanAchievements: Readonly<Record<string, { title: string; copy: stri
 	"wrong-corpse": { title: "Väärä muistopuhe", copy: "Hautajaiset olivat hienot. Vainaja vain hengitti." },
 	optimist: { title: "Klubin viimeinen optimisti", copy: "Uskoi jokaista herrasmiestä ja ansaitsi seuraukset." },
 	"recycle-problem": { title: "Kiertävä lasku", copy: "Kun lasku saapui, se siirrettiin sivistyneesti seuraavalle." },
-	"full-circle": { title: "Täysi klubikierros", copy: "Kortti kiersi salongin, eikä kukaan tunnustanut koskeneensa siihen." },
+	"full-circle": { title: "Täysi klubikierros", copy: "Kortti kiersi koko salongin ja jäi lopulta tämän herrasmiehen laskuun." },
 	"return-sender": { title: "Palautus hovimestarille", copy: "Tarjoilu kiersi pöydän ja palasi tilaajalleen." },
 	"dirty-baton": { title: "Tahmainen kävelykeppi", copy: "Kaikki pitelivät sitä. Kukaan ei kysynyt miksi se oli märkä." },
 	"slow-death": { title: "Pitkä ilta klubilla", copy: "Ei sammunut nopeasti. Sammui perusteellisesti." },
@@ -59,8 +59,8 @@ const gentlemanAchievements: Readonly<Record<string, { title: string; copy: stri
 	"equal-bastard": { title: "Tasapuolinen sikailija", copy: "Kohteli jokaista pöytätoveria yhtä ala-arvoisesti." },
 	"sofa-psychologist": { title: "Nahkasohvan Freud", copy: "Analysoi pöytäseurueen ilmeet ja laskutti konjakilla." },
 	"wrong-professional": { title: "Arvovaltainen väärässäolija", copy: "Oli väärässä niin vakuuttavasti, että siitä tuli virallinen kanta." },
-	"lone-genius": { title: "Klubin ainoa selvä", copy: "Kaikki muut näkivät kahtena. Tämä näki ikävä kyllä oikein." },
-	"herd-grave": { title: "Johtokunta hautaan", copy: "Päätös oli yksimielinen, arvokas ja täydellisen väärä." },
+	"lone-genius": { title: "Klubin ainoa selvä", copy: "Oli yksin oikeassa ja näki illan aikana useammin oikein kuin muut ehdokkaat." },
+	"herd-grave": { title: "Johtokunta hautaan", copy: "Osallistui yksimieliseen virheeseen ja keräsi illan aikana eniten huteja ehdokkaista." },
 };
 
 const themes: Readonly<Record<ThemeId, ThemeDefinition>> = {
