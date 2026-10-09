@@ -1,6 +1,10 @@
 # roachlike
 
-A browser-based bluffing card game for 2–6 friends, with private invite rooms, optional open-room discovery, and a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
+A browser-based bluffing card game for 2–6 friends, with open-by-default rooms, optional private lobbies, and a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
+
+## Versioning
+
+The application follows [Semantic Versioning](https://semver.org/). The canonical version is the root `package.json` `version` field, with `package-lock.json` kept in sync. Pre-MVP development uses `0.x.y`; the accepted MVP release will be `1.0.0`. Stable Git tags and GitHub Releases use the matching `v<version>` form.
 
 ## Credits
 
@@ -19,6 +23,8 @@ Open **http://127.0.0.1:5173**. Create a room and share its `/r/...` link, or le
 
 The API listens on `127.0.0.1:3001`. The Vite development server proxies API and Socket.IO traffic. Both listeners are local-only by default. SQLite is stored at `data/torakkapokeri.sqlite`; it is private server data and must never be served as static content.
 
+The browser uses History API navigation between the landing page and room routes. Direct room URLs, refreshes, and browser back/forward navigation remain supported without forcing internal links to reload the application.
+
 ## Commands
 
 | Command | Purpose |
@@ -32,7 +38,7 @@ The API listens on `127.0.0.1:3001`. The Vite development server proxies API and
 | `npm run build` | Produce browser production assets; run only when requested |
 | `npm start` | Run the server, serving existing production assets when available |
 
-Browser tests require installed Google Chrome. MVP checks use desktop Chrome at desktop and portrait-phone dimensions; they do not establish real iPhone compatibility. No production build has been run during initial implementation.
+Browser tests require installed Google Chrome. MVP checks use desktop Chrome at desktop and portrait-phone dimensions; they do not establish real iPhone compatibility. Production assets have been built for the authorized WSL2 development deployment; public production deployment remains pending.
 
 ## Structure
 
