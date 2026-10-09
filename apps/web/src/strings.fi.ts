@@ -154,13 +154,18 @@ export const FI = {
 		claimCard: "VÄITE",
 		nextMove: "SEURAAVA SIIRTO",
 		cardBack: "ÄLÄ LUOTA KEHENKÄÄN.",
-		claim: (name: string, creature: string) => `${name} sanoo: tämä on ${creature}.`,
+		claim: (name: string, creature: string, changed?: boolean) => {
+			const capitalizedCreature = creature.charAt(0).toLocaleUpperCase("fi") + creature.slice(1);
+			const statement = changed === undefined ? `tämä on ${capitalizedCreature}` : changed ? `eiku se on ${capitalizedCreature}` : `olihan se ${capitalizedCreature}`;
+			return `${name} sanoo: ${statement}.`;
+		},
 		claimRecipient: "puheet",
 		startTurn: (name: string) => `${name}, anna palaa.`,
 		startPrompt: "Valitse kortti, uhri ja uskottava selitys.",
 		cancelledRound: "Kierros peruttiin. Kortti poistettiin näkyvästi.",
 		takesCard: (name: string) => `${name} ottaa kortin.`,
-		nextPlayer: (name: string) => `Seuraavana: ${name}`,
+		nextPlayer: (name: string) => `${name}!`,
+		yourTurn: "Sun puheet!",
 		startHint: "Valitse omista korteista örkki, sitten kohde ja väite. Vain Lähetä paljastaa väitteen muille.",
 		responseHint: "Uskon = väite pitää paikkansa. En usko = se on valhe. Katso ja siirrä sitoo sinut siirtämään kortin.",
 		dismissHint: "Selvä, pokka pitää ✕",
@@ -169,6 +174,8 @@ export const FI = {
 		predictionReveal: "Paljastetaan vasta kortin ratkettua.",
 		believe: "Uskon",
 		disbelieve: "En usko",
+		believed: (name: string) => `${name} uskoi`,
+		disbelieved: (name: string) => `${name} ei uskonut`,
 		previousRound: "Edellinen kortti ja lukitut arvaukset",
 		retiredCards: (count: number) => `Poistetut näkyvät kortit (${count})`,
 	},
