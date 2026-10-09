@@ -6,7 +6,7 @@ services:
     init: true
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${TORAKKA_HTTP_PORT:-18889}:3001"
+      - "0.0.0.0:${TORAKKA_HTTP_PORT:-18889}:3001"
     environment:
       HOST: "0.0.0.0"
       PORT: "3001"
