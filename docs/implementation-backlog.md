@@ -1,6 +1,6 @@
 # Implementation Backlog
 
-Status: gameplay implementation is feature-complete pending visual stabilization, deployment verification, and friend-group acceptance; see [mvp-status.md](mvp-status.md) for verified evidence and remaining work. Product decisions live in [project-plan.md](project-plan.md); rules in [initial-info.md](initial-info.md). New rooms are listed openly by default, hosts may make them private, and every room retains a three-word invite code. Recap history is persistent and multiple independent rooms may run concurrently. Desktop Chrome is tested at desktop/mobile dimensions; no separate iPhone testing is required. A user-authorized browser build, WSL Docker dev deployment, GHCR publication, and digest-pinned deployment have run; public Nginx/TLS deployment remains unverified.
+Status: gameplay implementation is feature-complete pending visual stabilization, release verification, and friend-group acceptance; see [mvp-status.md](mvp-status.md) for verified evidence and remaining work. Product decisions live in [project-plan.md](project-plan.md); rules in [initial-info.md](initial-info.md). New rooms are listed openly by default, hosts may make them private, and every room retains a three-word invite code. Recap history is persistent and multiple independent rooms may run concurrently. Desktop Chrome is tested at desktop/mobile dimensions; no separate iPhone testing is required.
 
 Each numbered task is a separately reviewable increment. Finish its acceptance checks before moving to dependent tasks. Use pure-rule tests, storage/transport integration tests, and browser tests where each best verifies behavior. No arbitrary coverage percentage is required. Builds run only when requested.
 
@@ -18,7 +18,7 @@ Review artifact: [rules-contract.md](rules-contract.md), containing phases, comm
 
 Dependency: stack selection (complete); may proceed independently of remaining house-rule details.
 
-- [x] B1.1 Create workspaces and runtime/package configuration. **Check:** documented installation on development machine and Windows host; no platform-specific shell assumptions.
+- [x] B1.1 Create workspaces and runtime/package configuration. **Check:** documented installation in supported development and deployment environments; no platform-specific shell assumptions.
 - [x] B1.2 Configure TypeScript and lint rules matching AGENTS.md. **Check:** type/lint commands detect forbidden any, incorrect braces, and other configured conventions.
 - [x] B1.3 Configure unit, integration, and browser runners. Document dev/test/check commands and data locations. **Check:** a meaningful initial rules fixture runs through the test command; separate browser contexts are available for later tests.
 
@@ -104,33 +104,30 @@ Dependency: behavior interview, B2, B3, B4, and B5. Scope and proposed review sl
 - [x] B7C.4 Integrate scheduled actions, persistence, and agreed solo-test controls; verify exactly-once behavior across restart and seat changes.
 - [x] B7C.5 Complete solo browser games at 2, 3, and 6 seats, including recap/rematch and recovery.
 
-## B8 — Windows Deployment and Gameplay Acceptance
+## B8 — Release and Gameplay Acceptance
 
-Dependency: gameplay buckets and the computer-player work below; host reachability investigation can happen earlier.
+Dependency: gameplay buckets and the computer-player work below.
 
-- [ ] B8.1 Prepare configuration/instructions locally, then integrate with existing Nginx on the Windows host for the proposed `torakkapokeri.redlan.co` address. **Check on Windows:** DNS/TLS, API and socket proxying, real external Chrome connections, and process startup/restart after reboot. SSH to the WSL2 host is verified. Docker/Compose configuration and a backup/restore/rollback runbook are prepared in `ops/wsl-deployment.md`; a digest-pinned dev image is healthy on WSL2 port 18889, while Windows Nginx/public access and reboot recovery remain unverified. Local checks do not complete this gate.
-- [ ] B8.2 Database-aware backups, restore, migrations, and release rollback instructions. **Check:** restore a copied backup into an isolated instance and continue a saved game; logs omit private state.
+- [ ] B8.1 Verify environment-neutral configuration and public hosting behavior. **Check:** TLS, API and socket proxying, direct room links, external Chrome connections, and process restart behavior.
+- [ ] B8.2 Verify database-aware backups, restore, migrations, and release rollback. **Check:** restore a copied backup into an isolated instance and continue a saved game; logs omit private state.
 - [ ] B8.3 Run friend-group acceptance sessions at 2, 3, and 6 players. **Check:** complete games, external calls, controls at mobile viewport sizes, recovery, replacements, recap, and rematch. Record and fix blockers.
-- [ ] B8.4 Publish development and stable container releases to GitHub Container Registry. **Progress:** the first development image was published, authenticated, pulled, and deployed by digest on Windows/WSL2; stable publication and full retention/rollback verification remain. **Check:** finalized visibility/access policy, Linux/amd64 compatibility, immutable commit/version tags or digests, source traceability, and successful authenticated pull on the Windows/WSL2 host if private. Images contain no secrets or live database data; retain previous versions for rollback.
-- [ ] B8.5 Automate validation, image builds, and GHCR publishing with GitHub Actions. **Progress:** the workflow handles development pushes/manual dispatch and non-prerelease GitHub Releases; the development path has published successfully, while the stable release path remains unverified. **Check:** development/stable triggers publish only after required checks pass; stable publishing follows the main-branch release sequence; failed checks do not publish; publishing uses scoped credentials and does not automatically deploy to the host.
-- [ ] B8.6 Add registry-based deployment for human playtests and ongoing hosting. **Progress:** authenticated pull and digest-pinned development deployment succeeded; unattended credential unlocking, reboot recovery, public access, and rollback rehearsal remain. **Check:** choose a dev or stable tag/digest, pull and start it on Windows/WSL2 without rebuilding source, preserve saved games/recaps, verify health and external reconnect, and rehearse rollback to a retained image with compatible data. Document image selection, private-registry login if needed, backup, update, and rollback commands.
 
-Gate: user accepts gameplay before media implementation. Deployment/build execution occurs only when requested; these are planned tasks.
+Gate: user accepts gameplay before media implementation. Release and deployment execution occurs only when requested.
 
 ## B8S — Stabilization and Release Candidate
 
-Dependency: implemented gameplay buckets. These checks run before Windows deployment and friend-group acceptance are considered complete.
+Dependency: implemented gameplay buckets. These checks run before release and friend-group acceptance are considered complete.
 
 - [x] B8S.1 Make all Playwright scenarios pass repeatedly. **Check:** remove the intermittent full-game timeout without weakening assertions; verify open-room discovery, reconnect, rematch, and complete computer games together. **Evidence (2026-10-08):** all 14 Chrome scenarios pass twice (28 passes). Fixed first-turn dialog pointer events and desktop hand clearance; automation now waits for completed actions, handles guidance explicitly, opens the history menu, and measures the current claim presentation.
 - [ ] B8S.2 Review the table at narrow and wide desktop sizes with 2–6 seats. **Check:** no player card, public total, route, banner, claim, response, or private hand obscures another required control or datum.
 - [x] B8S.3 Validate achievement frequency and boundaries. **Check:** deterministic fixtures cover every award; several representative long games produce a selective recap rather than awarding most of the catalog.
-- [x] B8S.4 Run the local release-candidate check set after stabilization changes. **Check:** type checks, lint, unit/integration tests, and simulations pass in the current workspace. **Evidence (2026-10-08):** `npm run check` passes with all 82 tests, including 60 complete simulated games across 2, 3, and 6 players, card conservation/private-hand boundaries, and achievement boundary/frequency checks. Per user direction, the full Chrome suite and clean-checkout validation are deferred to the deployment machine after the development version is deployed there; they remain required deployment validation.
+- [x] B8S.4 Run the local release-candidate check set after stabilization changes. **Check:** type checks, lint, unit/integration tests, and simulations pass in the current workspace. **Evidence:** `npm run check` passes with complete game simulations, card-conservation checks, private-hand boundaries, and achievement boundary/frequency coverage.
 
 ## B9 — Integrated Audio/Video, After Gameplay Acceptance
 
 Dependency: B8 acceptance and clarified media requirements.
 
-- [ ] B9.1 Compare media topology/provider options against Windows hosting, budget, six-player bandwidth, and phones. **Check:** a technical spike proves multi-network audio/video and relay behavior.
+- [ ] B9.1 Compare media topology/provider options against the hosting budget, six-player bandwidth, and phones. **Check:** a technical spike proves multi-network audio/video and relay behavior.
 - [ ] B9.2 Add device setup, permission/error handling, and required-device policy. **Check:** allowed/denied/missing devices, interrupted devices, device changes, and spectator rules.
 - [ ] B9.3 Replace avatars with persistent face panels, emphasizing sender/receiver. **Check:** all faces remain visible without obscuring private hand or public table, including portrait mobile.
 - [ ] B9.4 Integrate reconnection, audio controls, and media-triggered pause. **Check:** muting microphone or disabling camera pauses game actions; exercise the agreed resume policy, six-way play, network switches, echo/feedback, and media failure without lost state. Voice activation is optional later work.
@@ -150,6 +147,6 @@ These decisions are now approved and implemented in the rules contract and runti
 
 ## Operational Questions
 
-- Windows version and verification of existing domain/Nginx reachability. Real-device/mobile-OS validation is deferred beyond MVP.
+- Public-host verification and backup retention. Real-device/mobile-OS validation is deferred beyond MVP.
 - Backup destination, saved recap retention policy, maximum simultaneous rooms, and spectator limits.
 - Media-phase pause/resume policy and unexpected dropout handling; user mute/camera-off explicitly pauses the game. No media pause logic in external-call MVP.

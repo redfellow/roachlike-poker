@@ -12,7 +12,7 @@ The application follows [Semantic Versioning](https://semver.org/). The canonica
 
 ## Local development
 
-Use Node.js 24 LTS or newer and npm. Development is supported on macOS; the intended deployment host is Windows with an existing Nginx installation.
+Use Node.js 24 LTS or newer and npm.
 
 ```sh
 npm ci
@@ -38,7 +38,7 @@ The browser uses History API navigation between the landing page and room routes
 | `npm run build` | Produce browser production assets; run only when requested |
 | `npm start` | Run the server, serving existing production assets when available |
 
-Browser tests require installed Google Chrome. MVP checks use desktop Chrome at desktop and portrait-phone dimensions; they do not establish real iPhone compatibility. Production assets have been built for the authorized WSL2 development deployment; public production deployment remains pending.
+Browser tests require installed Google Chrome. MVP checks use desktop Chrome at desktop and portrait-phone dimensions; they do not establish real iPhone compatibility.
 
 ## Structure
 
@@ -48,7 +48,7 @@ Browser tests require installed Google Chrome. MVP checks use desktop Chrome at 
 - `apps/web`: React table, original creature SVGs, Finnish UI, responsive CSS.
 - `tests/e2e`: multi-browser interaction tests.
 - `docs`: product decisions, rules, technical plan, backlog, and verification status.
-- `ops`: Windows/Nginx deployment and backup guidance.
+- `ops`: database backup tooling and a reverse-proxy configuration example.
 
 ## Persistence and identity
 
@@ -60,4 +60,4 @@ This is a friends-only identity model: an exact-name join may reclaim a disconne
 
 `HOST` overrides the default loopback bind address (Docker uses `0.0.0.0` internally); `TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 4300 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
 
-See [WSL Docker deployment](ops/wsl-deployment.md), [Windows deployment](ops/windows.md), [rules contract](docs/rules-contract.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).
+See the [rules contract](docs/rules-contract.md), [technical plan](docs/technical-plan.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).

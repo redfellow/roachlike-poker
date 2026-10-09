@@ -98,15 +98,15 @@ Each bucket requires explicit scope, dependencies, acceptance criteria, and veri
 
 ## Hosting and Reliability
 
-- The user has a domain and an existing Nginx installation on the Windows hosting PC, and can add a TLS certificate. Proposed game address: `https://torakkapokeri.redlan.co`. SSH access to Ubuntu on Windows WSL2 is verified through Tailscale; Windows Nginx integration remains unverified.
-- Use GitHub Container Registry (GHCR) to distribute development and stable container releases. Automate image publishing with GitHub Actions so the Windows host can pull a chosen version for human playtests or ongoing hosting. Publishing an image and switching the running host are separate steps; the user chooses when and which version to deploy. Preserve saved games and recap history across updates, and keep earlier versions available for rollback.
+- Support a portable single-host deployment behind a TLS reverse proxy. Keep host addresses, access details, and credentials outside the public repository.
+- Publishing a release and switching a running host are separate operations. Preserve saved games and recap history across updates, and keep a compatible rollback path.
 - MVP verification uses desktop Chrome at desktop and mobile viewport dimensions. Separate iPhone or physical-phone testing is not required for MVP. Responsive phone/tablet layouts remain in scope; viewport checks do not establish real-device compatibility.
 - Ongoing games must survive server restarts, in addition to browser reconnects.
-- Accepted stack: React/Vite, TypeScript, Node.js/Fastify/Socket.IO, SQLite, Vitest/Playwright, and ESLint Stylistic. Use existing Windows Nginx instead of Caddy. Details: [technical-plan.md](technical-plan.md).
+- Accepted stack: React/Vite, TypeScript, Node.js/Fastify/Socket.IO, SQLite, Vitest/Playwright, and ESLint Stylistic. Details: [technical-plan.md](technical-plan.md).
 - Future integrated media: keep all faces visible and emphasize sender/receiver. Players may temporarily mute their microphone or disable their camera, but doing so pauses the game. Resume policy and unexpected media-loss behavior will be settled in the media phase. Voice activation may be explored later. External-call MVP has no media-based pause enforcement.
 
 ## Remaining Decisions
 
-- Deployment verification against existing Windows Nginx; Windows version; backup destination and operational retention policy. Saved recap history is required; do not discard it on rematch.
+- Public-environment verification, backup destination, and operational retention policy. Saved recap history is required; do not discard it on rematch.
 - Deferred to media phase: pause/resume details, unexpected device/network failures, and voice activation.
 - Remaining edge-case defaults are explicitly proposed in the implementation backlog; do not silently treat them as confirmed product rules.

@@ -1,21 +1,21 @@
 # Technical Plan
 
-Status: stack implemented, with existing Windows Nginx replacing the proposed Caddy server. Production-host verification remains. Target: a small friend group, Windows hosting, desktop Chrome with responsive viewport testing for MVP, persistent games, gameplay before integrated video.
+Status: stack implemented. Target: a small friend group, portable single-host deployment, desktop Chrome with responsive viewport testing for MVP, persistent games, gameplay before integrated video.
 
 ## Stack
 
 | Layer | Choice | Reason |
 | --- | --- | --- |
-| Language/runtime | Strict TypeScript, Node.js 24 LTS, ESM | Shared contracts and rules; a supported runtime suitable for Windows |
+| Language/runtime | Strict TypeScript, Node.js 24 LTS, ESM | Shared contracts and rules on a supported runtime |
 | Browser | React with Vite, regular CSS with BEM classes | Responsive card/table components and local UI state; no server-rendering requirement |
 | Server | Fastify and Socket.IO | HTTP endpoints plus bidirectional room events and reconnection support |
 | Storage | SQLite via better-sqlite3, versioned SQL migrations | One local database for a single server; transactions for durable game transitions |
 | Validation | Runtime schemas at command boundaries | Treat incoming data as unknown; validate before changing state |
 | Tests | Vitest and Playwright | Rules/storage tests plus separate-browser multiplayer flows |
 | Style | ESLint, typescript-eslint, ESLint Stylistic | Enforce tabs, explicit types, semicolons, quotes, and Stroustrup braces from AGENTS.md |
-| Serving | Existing Windows Nginx; separately managed Node.js process | Reuse the user’s existing proxy and certificate setup for static assets and backend forwarding |
+| Serving | Node.js with an optional reverse proxy | Serve the client, API, and sockets from one origin |
 
-Use npm workspaces and a lockfile. Pin compatible stable dependencies during setup; check native SQLite installation on the actual Windows host. Do not add a formatter that rewrites Stroustrup braces. Prefer ordinary CSS transitions and small original retro sound effects initially.
+Use npm workspaces and a lockfile. Pin compatible stable dependencies during setup and verify the native SQLite dependency in the target environment. Do not add a formatter that rewrites Stroustrup braces. Prefer ordinary CSS transitions and small original retro sound effects initially.
 
 Repository layout: `apps/web/`, `apps/server/`, `packages/game/`, `packages/protocol/`, `tests/e2e/`, and `ops/`. The pure game package does not depend on UI, transport, or storage.
 
@@ -39,21 +39,17 @@ Persist completed recap history across rematches and server restarts, including 
 
 Use local disk for SQLite. Add a database-aware backup/restore procedure and schema migrations; agree retention before deployment. This design targets one server process. Multiple-server scaling would require a different coordination/storage plan.
 
-## Windows Hosting
+## Deployment
 
-Reuse the user’s existing Nginx installation on the Windows PC. The user can add a TLS certificate. The proposed public address is `https://torakkapokeri.redlan.co`; it is not yet verified as deployed. Serve the built client and reverse-proxy API/socket traffic on this single origin. Keep the backend bound locally and manage its startup/restart separately from Nginx. Store persistent data outside release directories so application updates do not overwrite it.
+The server serves the built client, API, and Socket.IO traffic from one origin. Bind it directly or place it behind a reverse proxy with TLS and WebSocket forwarding. Store the SQLite database and backups outside release directories so application updates cannot overwrite persistent data.
 
-The current development machine is a MacBook with verified SSH access to Ubuntu on Windows WSL2 via Tailscale. Docker Desktop and Compose are available on the host; the dev game container is deployed and healthy on loopback port 18889; Windows Nginx integration is not yet verified. Do not treat local checks as proof of production reachability.
+Container releases may be published by CI, but publishing and deployment remain separate operations. Releases should identify their source commit, contain no secrets or live data, preserve persistent volumes, expose a health check, and support rollback with a compatible database backup.
 
-Use GitHub Container Registry (`ghcr.io`) for development and stable release images, with GitHub Actions automating validation, image builds, and publishing. Development images should identify their source commit; stable images should identify their release version and source commit. Use immutable version/commit tags or digests for reproducible deployments; optional moving `dev`/`stable` tags are conveniences, not rollback identifiers. Stable publishing follows the repository's main-branch release sequence. The prepared workflow publishes dev images on `development` pushes or manual dispatch, and stable images on non-prerelease GitHub Release publication after verifying the commit is contained in `main`. Registry visibility is initially private by GHCR default and must be verified after first publication.
-
-The Windows host pulls a selected published image rather than rebuilding application source for each playtest or hosting update. Keep registry publishing separate from host deployment: publishing must not automatically replace a running game. Add a registry-based Compose path that accepts an image tag/digest, preserves data and backup volumes, verifies health after switching, and supports returning to a retained previous image with its compatible database backup. Build Linux/amd64 images for the WSL2 host; additional platforms are optional. Workflows use scoped publishing credentials, and a private host pull uses read-only registry access. Never include secrets or live data in images.
-
-At deployment, inspect the existing Nginx configuration and verify Windows version, DNS, external reachability, TLS, and socket proxy behavior. Reuse the established network route where possible. Document startup, backup, restore, logs, and rollback. Production builds remain user-requested under AGENTS.md.
+Before exposing an environment publicly, verify TLS, socket reconnection, direct room URLs, process restart, backup restoration, and rollback. Environment-specific addresses, credentials, host access, and operational history belong outside the public repository.
 
 ## Later Media Phase
 
-Reserve stable player panels now. After gameplay acceptance, evaluate WebRTC transport, relay/SFU needs, Windows upload capacity, and mobile performance with six participants. Do not choose a media provider or promise a free six-way deployment yet. Preserve authoritative game state through media failures. A player muting their microphone or disabling their camera pauses gameplay; implement this only in the media phase. Define resume and unexpected media-loss behavior then. Voice activation is a later possibility, not an MVP requirement.
+Reserve stable player panels now. After gameplay acceptance, evaluate WebRTC transport, relay/SFU needs, host upload capacity, and mobile performance with six participants. Do not choose a media provider or promise a free six-way deployment yet. Preserve authoritative game state through media failures. A player muting their microphone or disabling their camera pauses gameplay; implement this only in the media phase. Define resume and unexpected media-loss behavior then. Voice activation is a later possibility, not an MVP requirement.
 
 ## Official References
 

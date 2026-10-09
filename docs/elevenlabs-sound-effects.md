@@ -4,8 +4,6 @@
 
 This document describes how to use ElevenLabs to create game-ready sound effects. It is based on the current public ElevenLabs overview and Sound Effects API documentation.
 
-The local API key was successfully authenticated against the `GET /v1/voices` endpoint with HTTP 200 and 21 available voices. No paid sound-generation request was run during documentation verification.
-
 ## Recommended Approach
 
 Use ElevenLabs for short, non-voice sound assets such as:
