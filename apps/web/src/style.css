@@ -377,7 +377,7 @@ small {
 .landing__main {
 	max-width: 1440px;
 	margin: auto;
-	padding: 70px 7% 90px;
+	padding: 25px 7% 35px;
 	min-height: calc(100dvh - 159px);
 	display: grid;
 	grid-template-columns: 1.2fr 1fr;
@@ -3624,6 +3624,27 @@ summary {
 
 	.seat__identity strong {
 		font-size: 12px;
+	}
+}
+
+@media (min-width: 2000px) and (min-height: 1100px) {
+	.app--game {
+		--game-ui-scale: 1.2;
+	}
+
+	.app--game .table,
+	.app--game .focus-restore,
+	.app--game .topbar>*,
+	.app--game .app__footer>*,
+	.app--game>.error,
+	.app--game>.vote {
+		zoom: var(--game-ui-scale);
+	}
+}
+
+@media (min-width: 2600px) and (min-height: 1400px) {
+	.app--game {
+		--game-ui-scale: 1.4;
 	}
 }
 

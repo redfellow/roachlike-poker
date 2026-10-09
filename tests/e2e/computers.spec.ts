@@ -101,6 +101,27 @@ test("six-seat table fits a portrait Chrome viewport", async function ({ browser
 	finally { await context.close(); }
 });
 
+test("game stage scales up and remains centered on a 5K-sized CSS viewport", async function ({ browser, request }) {
+	const context = await browser.newContext({ viewport: { width: 2993, height: 1615 } });
+	const page = await context.newPage();
+	try {
+		await createSoloTable(page, request, 4);
+		await page.getByRole("button", { name: "Koko näyttö" }).click();
+		const metrics = await page.locator(".table").evaluate(function (table) {
+			const bounds = table.getBoundingClientRect();
+			return { zoom: getComputedStyle(table).zoom, left: bounds.left, right: bounds.right, bottom: bounds.bottom, viewportWidth: innerWidth, viewportHeight: innerHeight, scrollWidth: document.documentElement.scrollWidth };
+		});
+		expect(metrics.zoom).toBe("1.4");
+		expect(Math.abs(metrics.left - (metrics.viewportWidth - metrics.right))).toBeLessThan(3);
+		expect(metrics.bottom).toBeLessThanOrEqual(metrics.viewportHeight);
+		expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+		await page.screenshot({ path: "test-results/game-stage-5k.png", fullPage: true });
+		await page.getByRole("button", { name: "Poistu koko näytöstä" }).click();
+		await closeSoloTable(page);
+	}
+	finally { await context.close(); }
+});
+
 test("resolution exposes the accessible showdown without leaking the incoming card", async function ({ page, request }) {
 	await createSoloTable(page, request, 2, false);
 	for (let step = 0; step < 200; step++) {

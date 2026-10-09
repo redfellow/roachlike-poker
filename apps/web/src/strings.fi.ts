@@ -126,8 +126,8 @@ export const FI = {
 		closeConfirm: "Poistetaanko aula pysyvästi? Kaikki pelaajat katkaistaan ja kutsulinkki lakkaa toimimasta.",
 		remove: "Poista",
 		removeConfirm: "Poistetaanko tämä pelaaja pöydästä?",
-		removeComputer: (name: string) => `Poista ${name}`,
-		removeComputerConfirm: (name: string) => `Poistetaanko ${name} pöydästä?`,
+		removePlayer: (name: string) => `Poista ${name}`,
+		removePlayerConfirm: (name: string) => `Poistetaanko ${name} pöydästä?`,
 	},
 	table: {
 		eyebrow: "PIDÄ POKKASI",
