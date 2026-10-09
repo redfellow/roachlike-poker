@@ -20,7 +20,11 @@
 		"check": "npm run typecheck && npm run lint && npm test",
 		"build": "npm run build -w @torakka/web",
 		"start": "npm run start -w @torakka/server",
-		"backup": "tsx ops/backup.ts"
+		"backup": "tsx ops/backup.ts",
+		"release:prepare": "npm version --no-git-tag-version",
+		"deploy:dev": "sh ops/deploy-image.sh dev",
+		"deploy:version": "sh ops/deploy-image.sh version",
+		"deploy:image": "sh ops/deploy-image.sh image"
 	},
 	"dependencies": {
 		"@fastify/static": "^10.1.5",

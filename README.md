@@ -37,6 +37,8 @@ The browser uses History API navigation between the landing page and room routes
 | `npm run test:e2e` | Run isolated Chrome browser scenarios against development servers |
 | `npm run build` | Produce browser production assets; run only when requested |
 | `npm start` | Run the server, serving existing production assets when available |
+| `npm run deploy:dev` | Pull and deploy the newest development image |
+| `npm run deploy:version -- <version>` | Pull and deploy a versioned release |
 
 Browser tests require installed Google Chrome. MVP checks use desktop Chrome at desktop and portrait-phone dimensions; they do not establish real iPhone compatibility.
 
@@ -60,4 +62,4 @@ This is a friends-only identity model: an exact-name join may reclaim a disconne
 
 `HOST` overrides the default loopback bind address (Docker uses `0.0.0.0` internally); `TORAKKA_DB` overrides the database path; `PORT` overrides the backend port. `TORAKKA_COMPUTER_DELAY_MS` changes the default 4300 ms computer thinking delay, and `TORAKKA_COUNTDOWN_MS` changes the default 5000 ms lobby countdown. `TORAKKA_WEB_PORT` is available for isolated Vite development instances. Use an absolute database path for deployment. The process serves the built web assets from `apps/web/dist` when that directory exists.
 
-See the [rules contract](docs/rules-contract.md), [technical plan](docs/technical-plan.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).
+See the [release guide](docs/releasing.md), [rules contract](docs/rules-contract.md), [technical plan](docs/technical-plan.md), and [implementation backlog](docs/implementation-backlog.md). Remaining validation and implementation gaps are tracked in [MVP status](docs/mvp-status.md).
