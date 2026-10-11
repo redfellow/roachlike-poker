@@ -101,15 +101,17 @@ test("six-seat table fits a portrait Chrome viewport", async function ({ browser
 	finally { await context.close(); }
 });
 
-test("game stage scales up and remains centered on a 5K-sized CSS viewport", async function ({ browser, request }) {
-	const context = await browser.newContext({ viewport: { width: 2993, height: 1615 } });
+test("game stage scales fluidly and remains centered on a 5K-sized CSS viewport", async function ({ browser, request }) {
+	const context = await browser.newContext({ viewport: { width: 2300, height: 1250 } });
 	const page = await context.newPage();
 	try {
 		await createSoloTable(page, request, 4);
 		await page.getByRole("button", { name: "Koko näyttö" }).click();
-		const metrics = await page.locator(".table").evaluate(function (table) {
-			const bounds = table.getBoundingClientRect();
-			return { zoom: getComputedStyle(table).zoom, left: bounds.left, right: bounds.right, bottom: bounds.bottom, viewportWidth: innerWidth, viewportHeight: innerHeight, scrollWidth: document.documentElement.scrollWidth };
+		await expect(page.locator(".game-stage")).toHaveCSS("zoom", "1.2");
+		await page.setViewportSize({ width: 2993, height: 1615 });
+		const metrics = await page.locator(".game-stage").evaluate(function (stage) {
+			const bounds = stage.getBoundingClientRect();
+			return { zoom: getComputedStyle(stage).zoom, left: bounds.left, right: bounds.right, bottom: bounds.bottom, viewportWidth: innerWidth, viewportHeight: innerHeight, scrollWidth: document.documentElement.scrollWidth };
 		});
 		expect(metrics.zoom).toBe("1.4");
 		expect(Math.abs(metrics.left - (metrics.viewportWidth - metrics.right))).toBeLessThan(3);

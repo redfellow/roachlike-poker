@@ -1107,9 +1107,17 @@ select {
 	border-top: 1px solid var(--line);
 }
 
+.game-stage {
+	--game-ui-scale: clamp(1, min(calc(1 + (100vw - 2000px) / 1500px), calc(1 + (100dvh - 1100px) / 750px)), 1.4);
+	width: 100%;
+	max-width: 1500px;
+	margin-inline: auto;
+	zoom: var(--game-ui-scale);
+}
+
 .table {
 	position: relative;
-	max-width: 1500px;
+	max-width: 100%;
 	margin: auto;
 	padding: 18px 4.5% 24px;
 }
@@ -3627,27 +3635,6 @@ summary {
 	}
 }
 
-@media (min-width: 2000px) and (min-height: 1100px) {
-	.app--game {
-		--game-ui-scale: 1.2;
-	}
-
-	.app--game .table,
-	.app--game .focus-restore,
-	.app--game .topbar>*,
-	.app--game .app__footer>*,
-	.app--game>.error,
-	.app--game>.vote {
-		zoom: var(--game-ui-scale);
-	}
-}
-
-@media (min-width: 2600px) and (min-height: 1400px) {
-	.app--game {
-		--game-ui-scale: 1.4;
-	}
-}
-
 @media (min-width: 851px) {
 
 	.theme--herrasmiespokeri .seats--2+.play-area,
@@ -3662,18 +3649,18 @@ summary {
 	}
 
 	.theme--herrasmiespokeri .seats--around .seat:last-child {
-		top: 365px;
+		top: var(--seat-y-bottom);
 	}
 
 	.theme--herrasmiespokeri .seats--around+.play-area {
 		height: 300px;
 		min-height: 300px;
-		margin-bottom: 107px;
+		margin-bottom: calc(var(--play-area-bottom-gap) - 13px);
 	}
 
 	.theme--herrasmiespokeri .seats--4 .seat:nth-child(2),
 	.theme--herrasmiespokeri .seats--4 .seat:nth-child(3) {
-		top: 172px;
+		top: calc(var(--seat-y-middle) - 18px);
 	}
 
 	.theme--herrasmiespokeri .hint {
@@ -3699,6 +3686,16 @@ summary {
 	}
 
 	.seats--around {
+		--felt-inline-edge: 20%;
+		--seat-felt-overlap: 18px;
+		--seat-width: clamp(190px, 19vw, 260px);
+		--seat-y-top: 0px;
+		--seat-y-upper: 75px;
+		--seat-y-middle: 190px;
+		--seat-y-lower: 275px;
+		--seat-y-bottom: 365px;
+		--play-area-top-gap: 78px;
+		--play-area-bottom-gap: 120px;
 		display: block;
 		position: relative;
 		height: 0;
@@ -3707,12 +3704,12 @@ summary {
 
 	.seats--around .seat {
 		position: absolute;
-		width: clamp(190px, 19vw, 260px);
+		width: var(--seat-width);
 	}
 
 	.seats--around+.play-area {
 		min-height: 270px;
-		margin: 78px 20% 120px;
+		margin: var(--play-area-top-gap) var(--felt-inline-edge) var(--play-area-bottom-gap);
 	}
 
 	.seats--around+.play-area .decision-token {
@@ -3731,7 +3728,7 @@ summary {
 
 	.seats--around .seat:last-child {
 		left: 50%;
-		top: 365px;
+		top: var(--seat-y-bottom);
 		transform: translateX(-50%);
 	}
 
@@ -3747,80 +3744,80 @@ summary {
 
 	.seats--2 .seat:first-child {
 		left: 50%;
-		top: 0;
+		top: var(--seat-y-top);
 		transform: translateX(-50%);
 	}
 
 	.seats--3 .seat:nth-child(1) {
 		left: 3%;
-		top: 75px;
+		top: var(--seat-y-upper);
 	}
 
 	.seats--3 .seat:nth-child(2) {
 		right: 3%;
-		top: 75px;
+		top: var(--seat-y-upper);
 	}
 
 	.seats--4 .seat:nth-child(1) {
 		left: 50%;
-		top: 0;
+		top: var(--seat-y-top);
 		transform: translateX(-50%);
 	}
 
 	.seats--4 .seat:nth-child(2) {
 		left: 0;
-		top: 190px;
+		top: var(--seat-y-middle);
 	}
 
 	.seats--4 .seat:nth-child(3) {
 		right: 0;
-		top: 190px;
+		top: var(--seat-y-middle);
 	}
 
 	.seats--5 .seat:nth-child(1) {
 		left: 2%;
-		top: 55px;
+		top: calc(var(--seat-y-upper) - 20px);
 	}
 
 	.seats--5 .seat:nth-child(2) {
 		right: 2%;
-		top: 55px;
+		top: calc(var(--seat-y-upper) - 20px);
 	}
 
 	.seats--5 .seat:nth-child(3) {
 		left: 0;
-		top: 265px;
+		top: calc(var(--seat-y-lower) - 10px);
 	}
 
 	.seats--5 .seat:nth-child(4) {
 		right: 0;
-		top: 265px;
+		top: calc(var(--seat-y-lower) - 10px);
 	}
 
 	.seats--6 .seat:nth-child(1) {
 		left: 50%;
-		top: 0;
+		top: var(--seat-y-top);
 		transform: translateX(-50%);
 	}
 
 	.seats--6 .seat:nth-child(2) {
 		right: 0;
-		top: 85px;
+		top: calc(var(--seat-y-upper) + 10px);
 	}
 
 	.seats--6 .seat:nth-child(3) {
 		right: 0;
-		top: 275px;
+		top: var(--seat-y-lower);
 	}
 
 	.seats--6 .seat:nth-child(4) {
 		left: 0;
-		top: 275px;
+		top: var(--seat-y-lower);
 	}
 
 	.seats--6 .seat:nth-child(5) {
 		left: 0;
-		top: 85px;
+		top: calc(var(--seat-y-upper) + 10px);
 	}
 
 	.seats--3 .seat:nth-child(1),
@@ -3829,8 +3826,8 @@ summary {
 	.seats--5 .seat:nth-child(3),
 	.seats--6 .seat:nth-child(4),
 	.seats--6 .seat:nth-child(5) {
-		left: 20%;
-		translate: calc(-100% + 18px) 0;
+		left: var(--felt-inline-edge);
+		translate: calc(-100% + var(--seat-felt-overlap)) 0;
 	}
 
 	.seats--3 .seat:nth-child(2),
@@ -3839,8 +3836,8 @@ summary {
 	.seats--5 .seat:nth-child(4),
 	.seats--6 .seat:nth-child(2),
 	.seats--6 .seat:nth-child(3) {
-		right: 20%;
-		translate: calc(100% - 18px) 0;
+		right: var(--felt-inline-edge);
+		translate: calc(100% - var(--seat-felt-overlap)) 0;
 	}
 }
 
