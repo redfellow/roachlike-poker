@@ -2,6 +2,12 @@
 
 A browser-based bluffing card game for 2–6 friends, with open-by-default rooms, optional private lobbies, and a Finnish interface. The MVP uses an external video call. Built-in audio/video is a later phase.
 
+## Specifications and documentation
+
+OpenSpec adoption is incremental. [Current specifications](openspec/specs/) are canonical for explicitly migrated capabilities; [change proposals](openspec/changes/) describe proposed and ongoing work. The [migration index](openspec/migration-index.md) identifies coverage and the existing documents that remain provisional references for unmigrated behavior. Missing OpenSpec coverage does not invalidate existing behavior. Setup, release, and operational guides remain maintained outside OpenSpec.
+
+Start a proposal in Codex with `$openspec-propose "your idea"`, or select `openspec-propose` from Skills. Review the proposal before implementation.
+
 ## Versioning
 
 The application follows [Semantic Versioning](https://semver.org/). The canonical version is the root `package.json` `version` field, with `package-lock.json` kept in sync. Pre-MVP development uses `0.x.y`; the accepted MVP release will be `1.0.0`. Stable Git tags and GitHub Releases use the matching `v<version>` form.
@@ -49,7 +55,8 @@ Browser tests require installed Google Chrome. MVP checks use desktop Chrome at 
 - `apps/server`: Fastify/Socket.IO server and transactional SQLite store.
 - `apps/web`: React table, original creature SVGs, Finnish UI, responsive CSS.
 - `tests/e2e`: multi-browser interaction tests.
-- `docs`: product decisions, rules, technical plan, backlog, and verification status.
+- `openspec`: canonical specs for migrated capabilities, change proposals, and the documentation migration index.
+- `docs`: provisional requirements for unmigrated behavior, maintained guides, planning context, and verification evidence; see the migration index.
 - `ops`: database backup tooling and a reverse-proxy configuration example.
 
 ## Persistence and identity
