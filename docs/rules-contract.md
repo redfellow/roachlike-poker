@@ -71,39 +71,17 @@ After adding the penalty, matching-card defeat is immediate. Otherwise, an empty
 
 ## Reconnection and Replacement
 
-Exact-name recovery of a disconnected seat requires no approval. The recovered name is normalized by trimming surrounding whitespace and Unicode normalization; duplicate display names are rejected if they differ only by case. Preserve the original case in the UI while using the normalized value for comparison.
-
-A spectator may request a seat if disconnected or unanswered for strictly more than 60 seconds after a required-action prompt. Valid owner action or reconnection cancels a pending request. Optional predictions and watching are not required actions.
-
-Approval is by a majority of remaining connected players: the voter set is frozen when the request is created, excluding the affected seat and requester, and requires $\lfloor n/2 \rfloor + 1$ approvals. If the voter set changes, the vote is cancelled and a fresh request is required. With no eligible voters, takeover cannot be approved.
-
-The new person inherits the hand, exposed display, and pending obligation, including a committed peek. Transfer control atomically; old-device commands must fail even if queued before transfer. The new person does not inherit earned prediction points or authorship of previous actions.
-
-A person who has already seen the active card cannot switch into an unseen receiver's seat until the challenge resolves. Seat history still prevents revisiting a seat even if its occupant changes.
+Requirements moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [player identity and recovery](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/player-identity/spec.md) and [spectator seat replacement](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/seat-replacement/spec.md).
 
 ## Permanent Removal
 
-Temporary disconnection never redistributes automatically. Host-confirmed removal is a separate action.
-
-1. If removal leaves fewer than three seats, preserve the seat, cards, and phase for a replacement; offer End game. This also applies to a two-player match losing a participant.
-2. Otherwise, if the removed seat is the current sender, receiver, or committed passer, cancel the unresolved challenge, reveal and retire its card without penalty, then redistribute the removed hand.
-3. If the removed seat is neither sender nor receiver, the removal waits until the current challenge resolves. A committed terminal result takes precedence; removal cannot undo defeat.
-4. Shuffle and distribute the removed hand evenly among remaining seats; keep their exposed cards visible but out of play. Remainder recipients are chosen randomly.
-5. A removed seat cannot be reclaimed during that match. The removed person may spectate but cannot take another seat until the active challenge ends and knowledge checks pass.
-
-When recovery requires a new initiator, choose randomly while protecting those closest to defeat. Use only public information: largest matching exposed stack first, then smallest hand.
-
-The exact recovery algorithm is: consider only seats with cards; exclude those tied for highest risk unless every candidate ties, then choose among all candidates. If no seat has cards, end without a loser. Preserve an unaffected already-scheduled starter; choose anew after cancellation or removal of that starter. This exception never changes ordinary turn/defeat rules.
+Requirements, including recovery-initiator selection, moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [departures](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/departures/spec.md).
 
 ## Persistence and History
 
-Save actual card ownership, committed private knowledge, phase, claims, predictions, command receipts, and action authorship. Never reconstruct a dealt game by reshuffling on restart.
-
-Persist recap history separately from the current match view. Do not reveal remaining hands just because a match ended. A saved recap contains only approved public/revealed information and factual achievements; private storage is not a public history payload.
+Saved state, recap history and restart behavior moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [persistence](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/persistence/spec.md).
 
 Persist the host-selected theme as an ID and version on the room, active match, and recap. Theme packs change presentation only: all card IDs, quantities, defeat thresholds, legal actions, scoring, and achievement conditions remain identical. If a stored theme is unavailable, clients render the default Örkkipokka theme without changing game state.
-
-On restart, mark connections offline, cancel unfinished countdowns and votes, preserve gameplay obligations, redeliver required prompts, and restart their AFK clocks. Replay snapshots without duplicate scores or historical sound effects.
 
 ## Worked Acceptance Scenarios
 
