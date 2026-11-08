@@ -26,6 +26,9 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 - Publicly show hand counts, exposed creatures, and the current challenge’s path and claims.
 - Brief automatic resolution animation and outcome sound, followed by a Finnish next-player announcement. Use a positive sound for personal success, a negative sound for taking the card, and a neutral sound for uninvolved players.
 - Show locked predictions after resolution with automatic emoji reactions based on aggregate prediction performance. These replace the proposed manual reaction buttons; exact emoji mapping remains open.
+
+> Overlap: the bullets below on saving recap history, rematch lobby and disconnected chairs are superseded in part by the pending change [spec-rooms-identity-spectators-reconnect](../openspec/changes/spec-rooms-identity-spectators-reconnect/proposal.md); retirement is a follow-up in the migration index. Room deletion contradicts "retains history" (proposal item 6).
+
 - Spotlight the loser and show a game recap and highlights. Save recap history across rematches and server restarts. Define measurable highlights without inferring belief from passing.
 - Rematch creates a fresh lobby populated by existing players; new players can join.
 - Grey out disconnected chairs. Host-confirmed removal and redistribution is an approved first-version house rule, subject to the constraints below.
@@ -33,27 +36,13 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 ## Rooms, Identity, and Spectators
 
-- Rooms are listed openly by default and always retain an invite link. The host may make a lobby private before play; active open games accept late arrivals as spectators. New invite links use memorable three-word codes, with collision checks; existing UUID links remain valid. The server supports multiple simultaneous room identities.
-- Players ready up. Once all are ready, show an animated five-second countdown. Start automatically without a separate host action; cancel if someone unreadies, disconnects, or a new player joins. Spectators do not affect readiness. Require 2–6 players.
-- Late arrivals can spectate public gameplay, never private hands.
-- Names must be unique among connected players. An exact-name join can reclaim a disconnected player's seat, including from another device. No approval is required for this friends-only recovery; notify the table of the replacement. Revoke the old device’s control and show it a seat-in-use message. Transfer races and name normalization remain to be specified.
-- A disconnect does not globally pause play. Preserve the hand and seat; wait if the absent player must act. Allow host removal rather than indefinite blocking.
-- Spectators may request a disconnected seat or a seat that has not responded to an action prompt for over 60 seconds. Approval requires a majority of the remaining connected players; the requester cannot vote. Cancel a disconnected-seat request if its owner reconnects before approval. The 60-second threshold starts only on a required game-action prompt, not watching or optional predictions. A valid response cancels a pending AFK replacement vote. The exact voter set remains to be specified. This threshold enables replacement; it does not auto-play or forfeit a turn.
-- A replacement inherits the exact hand, exposed cards, and pending turn obligations. Prediction scores and achievements remain attributed to the individual people.
-- Host controls transfer automatically to another connected player when the host leaves.
-- Host-triggered rematch returns existing players to a fresh lobby and a new ready check. Keep the same room/invite link and allow newcomers to join.
+Requirements moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [rooms](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/rooms/spec.md), [player identity](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/player-identity/spec.md) and [seat replacement](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/seat-replacement/spec.md).
 
 ## Approved Departure House Rule
 
-- The host clicks a greyed-out chair and confirms permanent removal.
-- Redistribute only between resolved challenges and only if at least three players remain.
-- Shuffle the removed player's hand and distribute it as evenly as possible among remaining players.
-- Retain their exposed cards visibly, out of play.
-- A permanently removed seat cannot be reclaimed in that game; exact-name recovery applies only before removal.
+Requirements moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [departures](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/departures/spec.md).
+
 - Redistribution changes hand depletion risks, and the removed player knows their former hand. This tradeoff is accepted for the first playable version.
-- If removal involves the current sender, receiver, or a receiver who has peeked, cancel the challenge, reveal and retire its card visibly, and assign no penalty. Then redistribute the removed player's remaining hand when player-count rules permit.
-- When selecting a replacement initiator after removal/cancellation, choose randomly while excluding the player(s) closest to defeat. Rank risk using public information: largest matching exposed stack first, then smallest hand. Exclude everyone tied for highest risk; if everyone ties, choose among everyone. Never select an empty-handed player while a player with cards remains. Apply only to departure recovery, not ordinary turns. Filter precedence, the all-empty case, and retention of an unaffected initiator remain to be specified.
-- If removal would leave fewer than three players, notify the table that a replacement is needed and offer End game. Keep the seat, hand, and obligations intact for a replacement, including in an existing two-player game. The host may end the match without declaring a loser. Do not redistribute or retire the preserved seat’s cards while awaiting replacement.
 - Still unresolved: remainder-card assignment, removal/replacement transaction timing, and unavailable earlier participants in an otherwise playable challenge.
 
 ## Predictions and Match Achievements
@@ -70,13 +59,10 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 - Playful, darkish, somewhat gross adult aesthetic; not childish or anime.
 - Restrained animation and retro game sound/feel, with Mario, Sonic, and Commodore 64 as tonal references, not asset sources.
-- Support fully playable portrait mobile: own hand below, central claim, compact opponent panels with public exposed-card counts, emphasis on sender and receiver.
-- Group the local hand into creature stacks. Group identities, counts, order, and selection are private; opponents see only the total hand count. Do not send private grouping details to other clients.
-- Provide mute and reduced-motion options.
-- Include concise Finnish rules and contextual action explanations.
-- Include a guided-first-turn checkbox in the lobby, default on, remembered per device. Guidance must be local and must not reveal hidden choices to other players. Show dismissible local hints during the first actual turn, without a separate practice game or pausing other players.
-- Treat visual themes as an MVP game setting. The host chooses a visual tile in the lobby before countdown; everyone sees changes immediately and the selection persists through the game and rematches. A theme can replace card art and names, card backs, table colors, theme-specific wording, and achievement titles/flavor while keeping mechanics, sounds, and factual achievement conditions shared. Store theme ID and version in recap history and fall back to Örkkipokka when an old theme is unavailable.
-- Ship Örkkipokka as the default and Herrasmiespokeri as the second MVP theme. Herrasmiespokeri uses maroon/brick red, black, fiery orange, brass/gold, worn parchment, top hats on avatars, and the fixed eight-card mapping Härvääjä, Kiltti, Tilasto, Murre, Lurkki, Viilaaja, Nippeli, and Pamppu.
+- Layout, private hand grouping and the resolution display: see [visual-presentation](../openspec/specs/visual-presentation/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
+- Mute, music and sound behavior: see [game-audio](../openspec/specs/game-audio/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending). Reduced motion: see [visual-presentation](../openspec/specs/visual-presentation/spec.md).
+- Rules view and guided first-turn hints: see [onboarding](../openspec/specs/onboarding/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
+- Visual themes and the shipped theme packs (Örkkipokka, Herrasmiespokeri): see [visual-presentation](../openspec/specs/visual-presentation/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 
 ## Provisional Work Buckets
 
@@ -97,9 +83,9 @@ Each bucket requires explicit scope, dependencies, acceptance criteria, and veri
 ## Hosting and Reliability
 
 - Support a portable single-host deployment behind a TLS reverse proxy. Keep host addresses, access details, and credentials outside the public repository.
-- Publishing a release and switching a running host are separate operations. Preserve saved games and recap history across updates, and keep a compatible rollback path.
+- Publishing a release and switching a running host are separate operations. Keep a compatible rollback path across updates. Saved games and recaps: see [persistence](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/persistence/spec.md).
 - MVP verification uses desktop Chrome at desktop and mobile viewport dimensions. Separate iPhone or physical-phone testing is not required for MVP. Responsive phone/tablet layouts remain in scope; viewport checks do not establish real-device compatibility.
-- Ongoing games must survive server restarts, in addition to browser reconnects.
+- Restart survival: see [persistence](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/persistence/spec.md) (pending change `spec-rooms-identity-spectators-reconnect`).
 - Accepted stack: React/Vite, TypeScript, Node.js/Fastify/Socket.IO, SQLite, Vitest/Playwright, and ESLint Stylistic. Details: [technical-plan.md](technical-plan.md).
 - Future integrated media: keep all faces visible and emphasize sender/receiver. Players may temporarily mute their microphone or disable their camera, but doing so pauses the game. Resume policy and unexpected media-loss behavior will be settled in the media phase. Voice activation may be explored later. External-call MVP has no media-based pause enforcement.
 
