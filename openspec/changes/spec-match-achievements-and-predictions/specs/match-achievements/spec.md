@@ -5,7 +5,7 @@ The recap SHALL score each person's predictions across all non-cancelled resolut
 
 #### Scenario: Predictions on two claims of one card score separately
 - **WHEN** a person predicts "false" on a false first claim and "true" on a true passed claim, and the card resolves
-- **THEN** that person's score shows two correct out of two submitted
+- **THEN** both correct predictions count toward that person's `correct` total (as counted by the `correct` leaderboard award and `sofa-psychologist`), and the recap shows no prediction score
 
 #### Scenario: Cancelled challenge earns nothing
 - **WHEN** a challenge is cancelled after predictions were submitted

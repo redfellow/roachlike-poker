@@ -4,6 +4,8 @@ Status: keep this set and tone. This is the maximum permitted level of filth; do
 
 Requirements (attribution, ties, leaderboard minimums, award conditions and copy for both themes) are specified in the pending OpenSpec change [match-achievements spec](../openspec/changes/spec-match-achievements-and-predictions/specs/match-achievements/spec.md), which follows the current implementation. After integration they move to `openspec/specs/match-achievements/spec.md`.
 
+Naming history: Oraakkeli peräsuolesta replaces Ajatustenlukija (other renames are noted in the table below). Hautausurakoitsija and Tyhjä käsi, kylmä perse were proposed here and now match the spec.
+
 ## Unresolved proposals
 
 Status: unresolved. These earlier proposals differ from the implemented conditions or copy in the spec above. Whether any of them should replace the implemented behavior has not been decided; they are kept as a record, not as requirements.

@@ -60,8 +60,12 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 ## Predictions and Match Achievements
 
-- Prediction eligibility, privacy, revision and locking: see the rules contract, [Passing and Private Predictions](rules-contract.md#passing-and-private-predictions).
-- Prediction scoring, recap statistics, attribution, ties and award conditions and copy: see the pending [match-achievements spec](../openspec/changes/spec-match-achievements-and-predictions/specs/match-achievements/spec.md) (moves to `openspec/specs/match-achievements/spec.md` on integration).
+- Only seated players who have not seen the challenge card may predict, excluding the current receiver. Spectators cannot predict under the agreed rule.
+- Each prediction concerns the current claim. Keep it private until the card is resolved.
+- Lock predictions when the receiver acts. A pass opens a new prediction opportunity for eligible players on the new claim.
+- Reveal the locked predictions together after final resolution.
+- Eligibility, privacy, locking and reveal above stay here until a reviewed game-rules spec replaces them; see also the rules contract, [Passing and Private Predictions](rules-contract.md#passing-and-private-predictions).
+- Prediction scoring (including that cancelled challenges earn no prediction points), recap statistics, attribution, ties and award conditions and copy: see the pending [match-achievements spec](../openspec/changes/spec-match-achievements-and-predictions/specs/match-achievements/spec.md) (moves to `openspec/specs/match-achievements/spec.md` on integration).
 - Keep the achievements in [achievement-ideas.md](achievement-ideas.md). Their current crude/dark humor is the upper limit: do not make the copy dirtier. Unresolved earlier proposals and open implementation details are recorded there.
 
 ## Visual Design and Onboarding

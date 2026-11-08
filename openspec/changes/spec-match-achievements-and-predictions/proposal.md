@@ -5,7 +5,7 @@ Match achievements and prediction scoring are implemented (`packages/game/src/in
 ## What Changes
 
 - Add capability `match-achievements`: recap prediction scoring and stats, person attribution, leaderboard awards, the 31 event/threshold awards with exact conditions, and the award copy for both themes, as the code does now.
-- Retire the requirement content of `docs/achievement-ideas.md` (the status line's attribution/tie rules and the award table) and the requirement bullets of `docs/project-plan.md` "Predictions and Match Achievements", replacing them with links to the new spec. Keep the tone/filth limit rationale and the open implementation details, and the doc's proposed conditions as an unresolved record (see Discrepancies).
+- Retire the requirement content of `docs/achievement-ideas.md` (the status line's attribution/tie rules and the award table) and the scoring, attribution and tie bullets of `docs/project-plan.md` "Predictions and Match Achievements", replacing them with links to the new spec. The confirmed eligibility, privacy, locking and reveal bullets stay in the project plan until a reviewed game-rules spec replaces them. Keep the tone/filth limit rationale and the open implementation details, and the doc's proposed conditions as an unresolved record (see Discrepancies).
 - Update the migration-index rows for those two documents to Partial with the pending change linked.
 - No code changes.
 
@@ -24,7 +24,7 @@ Code behavior is specified; doc text quoted:
 - "Hautapaikka varattu … at least three further resolved challenges" — code needs five.
 - "Oma kusetus, oma kuoppa | Kaivoit kuopan. Hyppäsit itse." — code title/copy is `Kuset reisillä` / `Kasteli omat housunsa.`
 - "Vainoharhainen mulkku … At least three" and "Totuus sattuu … At least three" — code needs four.
-- The code has 21 further awards not in the docs (e.g. `serial-liar`, `lone-genius`, `silent-partner`).
+- The code has 23 further awards not in the docs (e.g. `serial-liar`, `lone-genius`, `silent-partner`).
 - project-plan "Show accuracy and participation alongside points" — recap shows prediction points only via awards; the score table shows receiver-answer accuracy, bluff calls and bluffs.
 
 Unresolved (status kept open): whether the docs' proposed conditions or copy should replace the code's; the open implementation details listed in achievement-ideas.md.
