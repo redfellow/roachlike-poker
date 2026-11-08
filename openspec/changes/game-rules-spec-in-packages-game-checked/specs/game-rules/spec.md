@@ -79,6 +79,10 @@ The eligible pass targets SHALL be the active seats that are not the current rec
 ### Requirement: Prediction eligibility
 Only during `response`, a seated person who is not the latest receiver and has not learned the card MAY submit a prediction (believe/disbelieve) on the latest claim. The submission SHALL name the challenge ID and the claim index. A stale or locked claim SHALL be rejected.
 
+#### Scenario: Spectator cannot predict
+- **WHEN** a person without a seat submits a prediction
+- **THEN** it is rejected
+
 #### Scenario: Stale prediction
 - **WHEN** a prediction names an earlier claim index after a pass
 - **THEN** it is rejected

@@ -7,12 +7,14 @@ Status: B0 review draft. Confirmed rules below consolidate the interview. Items 
 - A room retains its invite link and match history. A rematch creates a new match in that room.
 - A seat owns a hand, exposed display, and turn obligations. A person controls a seat; a connection/device is only a way to control it.
 - Same-name recovery preserves person and seat. A voted replacement changes the person while preserving the seat and its obligations. Record the person responsible at the time of each action.
-- Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr).
+- Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs).
 - Only the server decides legality, outcomes, and randomness. Each accepted command is applied once and committed before acknowledgment/broadcast.
+- Removing seats never changes the defeat threshold, which is fixed at match creation.
+- Draft selections and the grouping of a player's own hand into creature stacks stay private.
 
 ## Setup
 
-Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr).
+Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs).
 
 ## Phases and Commands
 
@@ -22,7 +24,8 @@ Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending rev
 | Lobby | Ready/unready by seated player | All 2–6 players ready starts the countdown. |
 | Countdown | Unready, seated join, or disconnect | Cancel countdown and return to lobby. Spectator changes do not cancel. |
 | Countdown | Server completes five seconds | Shuffle/deal once; enter initiation with random starter. |
-| Initiation, Response, Pass preparation, Resolution | Game commands and resolution | Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr). |
+| Initiation, Response, Pass preparation, Resolution | Game commands and resolution | Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs). |
+| Resolution | Server | Score locked predictions (reveal, penalty transfer, defeat check and next actor are migrated above). |
 | Replacement needed | Approved replacement or exact-name recovery | Restore control of preserved seat and phase. |
 | Replacement needed | End game by host | End without a loser; persist an interrupted-match recap. |
 | Ended | Rematch by host | Fresh lobby with existing players, reset readiness, same link and saved history. |
@@ -35,11 +38,12 @@ Resolution presentation is brief and automatic, followed by “Seuraavana: [name
 
 “True” means actual creature equals the latest claim. The penalty recipient starts next unless defeat occurs.
 
-Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr).
+Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs).
 
 ## Passing and Private Predictions
 
-- Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr).
+- Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs).
+- Persist the peek commitment before delivering the private card identity.
 - At final resolution, evaluate each locked prediction against its own claim and the actual creature: +1 correct, 0 wrong. Skips score zero and do not count in accuracy's denominator. No predictions can be added retroactively.
 - Cancelled challenges produce no points and do not publish their private predictions. No achievement progress comes from cancellation.
 
@@ -83,9 +87,10 @@ On restart, mark connections offline, cancel unfinished countdowns and votes, pr
 
 | ID | Given / action | Expected result |
 | --- | --- | --- |
-| R01–R11 | Game-rule scenarios | Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr). |
+| R01–R08, R10–R11 | Game-rule scenarios | Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs). |
+| R09 | B peeks, refreshes, then tries En usko | Rejection migrated above; refresh restores pass preparation with private card knowledge. |
 | R12 | Receiver response arrives twice | One penalty, one score update, one committed result. |
-| R13 | Spectator payload scenario | Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr). |
+| R13 | Spectator inspects every network payload | Projection migrated above; additionally no payload of any kind carries hands, grouped creature counts, pending predictions, or unrevealed challenge identity. |
 | R14 | Original connection sends after device reclaim | Rejected; new connection alone controls the preserved seat. |
 | R15 | Receiver remains connected at exactly 60 seconds | Not yet AFK-eligible; eligibility begins strictly after 60 seconds. No automatic move. |
 | R16 | AFK player responds before approval completes | Cancel pending replacement; process the legal response once. |
@@ -94,7 +99,8 @@ On restart, mark connections offline, cancel unfinished countdowns and votes, pr
 | R19 | Departed seat had peeked; replacement approved | New person must pass; cannot answer Uskon/En usko. |
 | R20 | Candidate X has stack 3/hand 8; Y stack 2/hand 2; Z stack 2/hand 5 | Recovery excludes X; choose between Y and Z. This is not normal next-turn selection. |
 | R21 | Candidate X has no hand; Y is sole candidate with cards | Proposed recovery selects Y; it cannot randomly force X's defeat. |
-| R22–R23 | Prediction submission scenarios | Migrated to [game-rules spec](../openspec/specs/game-rules/spec.md) (pending review in change spec-the-game-rules-from-the-rules-contr). |
+| R22 | Scoring of the migrated R22 scenario | At final resolution D earns two points, one per correct locked claim; nothing revealed early. |
+| R23 | Prediction submission scenario | Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs). |
 | R24 | Person X sends a bluff, then person Y replaces their sender seat before call | Seat bears penalty if challenged correctly; X retains authorship of the bluff. Y does not earn X's award. |
 | R25 | Server dies after commit but before broadcast | Retry/snapshot restores committed result once, with original cards and scores. |
 | R26 | Start rematch then restart server | Earlier recap remains accessible; new match has independent hands, readiness, and scores. |
