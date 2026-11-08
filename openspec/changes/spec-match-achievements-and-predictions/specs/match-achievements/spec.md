@@ -12,7 +12,7 @@ The recap SHALL score each person's predictions across all non-cancelled resolut
 - **THEN** the recap stores the cancelled resolution with no predictions and no score changes
 
 ### Requirement: Recap player statistics
-The recap SHALL show, per person, receiver answers, bluff calls and own final-claim bluffs.
+The recap SHALL show, per person, receiver answers, bluff calls and own final-claim bluffs. The round history SHALL show each resolved round's locked predictions per claim, with their outcome, after resolution.
 
 #### Scenario: Statistics columns
 - **WHEN** a recap is shown

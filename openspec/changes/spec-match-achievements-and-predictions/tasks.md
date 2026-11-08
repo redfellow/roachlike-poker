@@ -14,6 +14,6 @@
 
 ## 3. Migration index
 
-- [x] 3.1 Set the Achievement ideas row and a new Project plan "Predictions and Match Achievements" row to Partial, linking the pending change and spec; edit no other domain rows
+- [x] 3.1 Set the Achievement ideas row and a new Project plan "Predictions and Match Achievements" row to Partial, linking the pending change and spec; in other domain rows, only repair the Computer players row's spec link to its archived path and add to the Rules contract row a pointer that its prediction scoring and R22 scoring overlap with this spec (retirement as follow-up)
   - proof: `grep -n "spec-match-achievements-and-predictions" openspec/migration-index.md`
   - proof: `npx openspec validate spec-match-achievements-and-predictions --strict`
