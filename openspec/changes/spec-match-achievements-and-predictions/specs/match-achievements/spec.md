@@ -94,7 +94,7 @@ The recap SHALL show each award with its recipients' names joined by ` & `, the 
 
 #### Scenario: Default copy
 - **WHEN** an Örkkipokka recap shows an award
-- **THEN** it uses the copy below, substituting the count for `<count>` (`chain` uses the longest chain length); a key without a reason shows `Saavutus myönnettiin tämän ottelun tapahtumien perusteella.`
+- **THEN** it uses the copy below, substituting the count for `<count>` (`chain` uses the longest chain length among all stored resolutions, cancelled ones included); a key without a reason shows `Saavutus myönnettiin tämän ottelun tapahtumien perusteella.`
 
 | Key | Title | Copy | Reason |
 | --- | --- | --- | --- |
