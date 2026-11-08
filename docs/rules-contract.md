@@ -69,7 +69,7 @@ Saved state, recap history and restart behavior moved to OpenSpec (pending chang
 
 Not yet migrated (retained here): a saved recap contains only approved public/revealed information and factual achievements; private storage is not a public history payload. On restart, replay snapshots without duplicate scores or historical sound effects.
 
-Persist the host-selected theme as an ID and version on the room, active match, and recap. Theme packs change presentation only: all card IDs, quantities, defeat thresholds, legal actions, scoring, and achievement conditions remain identical. If a stored theme is unavailable, clients render the default Örkkipokka theme without changing game state.
+Theme persistence and presentation-only themes: see the [visual-presentation](../openspec/specs/visual-presentation/spec.md) spec (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 
 ## Worked Acceptance Scenarios
 
