@@ -1,0 +1,20 @@
+format: 1
+slug: spec-visual-presentation-onboarding-and
+title: Spec visual presentation, onboarding and audio behavior
+x-harvaaja-card: 62a58b43-25e0-471a-9863-b30ede58879b
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: No existing spec or active change covers presentation, onboarding,
+    themes or audio; sibling changes explicitly defer the theme paragraph to
+    this part.
+  citations:
+    - openspec/migration-index.md
+    - docs/project-plan.md#Visual Design and Onboarding
+    - docs/initial-info.md#6. Agreed Digital Presentation
+    - docs/rules-contract.md:104
+    - apps/web/src/main.tsx
+    - apps/server/src/runtime.ts:195
+  revision: 00e45182-d34b-4494-ab79-ebb0a863ac2f

@@ -79,7 +79,7 @@ Save actual card ownership, committed private knowledge, phase, claims, predicti
 
 Persist recap history separately from the current match view. Do not reveal remaining hands just because a match ended. A saved recap contains only approved public/revealed information and factual achievements; private storage is not a public history payload.
 
-Persist the host-selected theme as an ID and version on the room, active match, and recap. Theme packs change presentation only: all card IDs, quantities, defeat thresholds, legal actions, scoring, and achievement conditions remain identical. If a stored theme is unavailable, clients render the default Örkkipokka theme without changing game state.
+Theme persistence and presentation-only themes: see the [visual-presentation](../openspec/specs/visual-presentation/spec.md) spec (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 
 On restart, mark connections offline, cancel unfinished countdowns and votes, preserve gameplay obligations, redeliver required prompts, and restart their AFK clocks. Replay snapshots without duplicate scores or historical sound effects.
 
