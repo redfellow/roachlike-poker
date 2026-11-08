@@ -1,7 +1,7 @@
 # game-audio Specification
 
 ## Purpose
-TBD - created by archiving change spec-visual-presentation-onboarding-and. Update Purpose after archive.
+Define in-game sound effects, music and mute behavior.
 
 ## Requirements
 

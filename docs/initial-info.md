@@ -188,7 +188,7 @@ Select New Target            │
 
 ## 6. Agreed Digital Presentation
 
-- Finnish interface, no turn timers, resolution animation and sounds: see the [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) and [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) specs (pending change `spec-visual-presentation-onboarding-and`).
+- Finnish interface, no turn timers, resolution animation and sounds: see the [visual-presentation](../openspec/specs/visual-presentation/spec.md) and [game-audio](../openspec/specs/game-audio/spec.md) specs (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 - Reveal locked predictions after resolution, with automatic emojis based on overall prediction performance. No separate manual reaction buttons are currently planned.
 - Spotlight the loser and present a recap with evidence-based highlights. Highlight definitions remain open; passing alone does not prove someone believed a claim.
 - Rematch opens a fresh lobby with existing players, allowing new players to join. Save recap history across rematches and server restarts. Rooms are listed openly by default, but a host may make one private; every room retains an invite link and new links use memorable three-word codes. The server supports multiple independent rooms.
@@ -201,6 +201,6 @@ Rules reference: [Publisher’s base-game rules](https://www.dreimagier.de/files
 
 ### Visual and Tutorial Decisions
 
-Presentation (Finnish interface, layout, hand grouping, reduced motion, themes), onboarding and sound behavior: see the [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md), [onboarding](../openspec/changes/spec-visual-presentation-onboarding-and/specs/onboarding/spec.md) and [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) specs (pending change `spec-visual-presentation-onboarding-and`).
+Presentation (Finnish interface, layout, hand grouping, reduced motion, themes), onboarding and sound behavior: see the [visual-presentation](../openspec/specs/visual-presentation/spec.md), [onboarding](../openspec/specs/onboarding/spec.md) and [game-audio](../openspec/specs/game-audio/spec.md) specs (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 
 MVP layout verification uses desktop Chrome at desktop and mobile dimensions; separate iPhone testing is deferred. Future integrated media allows temporary microphone mute/camera-off but pauses gameplay when either occurs. Voice activation may be explored later. The external-call MVP does not enforce media-based pauses.

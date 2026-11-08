@@ -1,7 +1,7 @@
 # onboarding Specification
 
 ## Purpose
-TBD - created by archiving change spec-visual-presentation-onboarding-and. Update Purpose after archive.
+Define the rules view and guided first-turn hints that teach new players.
 
 ## Requirements
 

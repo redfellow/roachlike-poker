@@ -70,10 +70,10 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 - Playful, darkish, somewhat gross adult aesthetic; not childish or anime.
 - Restrained animation and retro game sound/feel, with Mario, Sonic, and Commodore 64 as tonal references, not asset sources.
-- Layout, private hand grouping and the resolution display: see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
-- Mute, music and sound behavior: see [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) (pending change `spec-visual-presentation-onboarding-and`). Reduced motion: see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md).
-- Rules view and guided first-turn hints: see [onboarding](../openspec/changes/spec-visual-presentation-onboarding-and/specs/onboarding/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
-- Visual themes and the shipped theme packs (Örkkipokka, Herrasmiespokeri): see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
+- Layout, private hand grouping and the resolution display: see [visual-presentation](../openspec/specs/visual-presentation/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
+- Mute, music and sound behavior: see [game-audio](../openspec/specs/game-audio/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending). Reduced motion: see [visual-presentation](../openspec/specs/visual-presentation/spec.md).
+- Rules view and guided first-turn hints: see [onboarding](../openspec/specs/onboarding/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
+- Visual themes and the shipped theme packs (Örkkipokka, Herrasmiespokeri): see [visual-presentation](../openspec/specs/visual-presentation/spec.md) (change `spec-visual-presentation-onboarding-and` archived and synced into specs; review, Git integration and acceptance pending).
 
 ## Provisional Work Buckets
 
