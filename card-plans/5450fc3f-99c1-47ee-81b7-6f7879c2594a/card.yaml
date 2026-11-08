@@ -5,3 +5,15 @@ x-harvaaja-card: 5450fc3f-99c1-47ee-81b7-6f7879c2594a
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: No specs or active changes exist; this is a new retrospective
+    OpenSpec change for room, identity, spectator, recovery, departure and
+    persistence capabilities, as the direction requires.
+  citations:
+    - "openspec/migration-index.md: no capability migrated"
+    - openspec/changes/ only archive
+    - docs/rules-contract.md#reconnection-and-replacement
+    - docs/project-plan.md#rooms-identity-and-spectators
+    - apps/server/src/runtime.ts
+  revision: 5357adc3-fe78-4fc4-917f-1fb8194fede6
