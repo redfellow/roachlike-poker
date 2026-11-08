@@ -55,13 +55,19 @@ Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-ga
 
 Requirements moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [player identity and recovery](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/player-identity/spec.md) and [spectator seat replacement](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/seat-replacement/spec.md).
 
+Not yet migrated (retained here): seat history still prevents revisiting a seat even if its occupant changes.
+
 ## Permanent Removal
 
 Requirements, including recovery-initiator selection, moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [departures](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/departures/spec.md).
 
+Not yet migrated (retained here): when removal waits for the current challenge, a committed terminal result takes precedence; removal cannot undo defeat.
+
 ## Persistence and History
 
 Saved state, recap history and restart behavior moved to OpenSpec (pending change `spec-rooms-identity-spectators-reconnect`): [persistence](../openspec/changes/spec-rooms-identity-spectators-reconnect/specs/persistence/spec.md).
+
+Not yet migrated (retained here): a saved recap contains only approved public/revealed information and factual achievements; private storage is not a public history payload. On restart, replay snapshots without duplicate scores or historical sound effects.
 
 Persist the host-selected theme as an ID and version on the room, active match, and recap. Theme packs change presentation only: all card IDs, quantities, defeat thresholds, legal actions, scoring, and achievement conditions remain identical. If a stored theme is unavailable, clients render the default Örkkipokka theme without changing game state.
 
