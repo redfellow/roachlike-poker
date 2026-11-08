@@ -19,7 +19,7 @@ Each computer SHALL get a name chosen at random from the unused names in a fixed
 - **THEN** its name is a `🤖` name that no other member of the room has
 
 ### Requirement: Computer readiness is automatic
-Seated computers SHALL always count as ready and online. When the host opens a rematch, the seated computers SHALL be ready and the humans SHALL not be.
+Seated computers SHALL always count as ready and online. A match SHALL start when two or more people are seated and every seated person is ready, whether the seated people are humans, computers or both; the host does not need a seat. When the host opens a rematch, the seated computers SHALL be ready and the humans SHALL not be.
 
 #### Scenario: Rematch keeps computers ready
 - **WHEN** the host opens a rematch after a match ends
@@ -65,7 +65,7 @@ A computer SHALL act after a delay of `TORAKKA_COMPUTER_DELAY_MS` milliseconds (
 - **THEN** clients first see the response phase without a resolution, and the resolution follows after the delay
 
 ### Requirement: Single scheduled computer action and restart recovery
-Each room SHALL have at most one pending computer timer. When the timer fires, the computer SHALL act on the latest stored room state: pending computer predictions are applied first, then the computer action that is required, if any. If nothing changed, nothing is saved. When the server starts, it SHALL schedule pending computer obligations for stored rooms without replaying earlier actions. Closing the room or the server SHALL clear the timers.
+Each room SHALL have at most one pending computer timer. When the timer fires, the computer SHALL act on the latest stored room state: pending computer predictions are applied first, then the computer action that is required, if any. If nothing changed, nothing is saved. Because the timer reads the latest stored state, no computer action is applied for a turn a human has already taken. Computer members (with their `computer` flag and name) and their seats SHALL be stored with the room; when the server starts, it SHALL restore them, recompute computer readiness, and schedule pending computer obligations for stored rooms without replaying earlier actions. Closing the room or the server SHALL clear the timers.
 
 #### Scenario: Pending response resumes after restart
 - **WHEN** the server restarts while a computer owes a response

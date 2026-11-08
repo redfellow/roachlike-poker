@@ -6,6 +6,12 @@ Computer-controlled players are integral to the MVP so the user can solo-test an
 
 Status: the MVP computer-player slice is implemented and verified. Strength profiles and dedicated debugging controls remain optional follow-up work.
 
+## Retained Rationale
+
+- Do not require an external AI service.
+- Keep optional test controls separate from ordinary play; ordinary gameplay must not be blocked by test controls.
+- Open decisions (see the change's Discrepancies): a stable, roughly even mix of belief and disbelief in computer answers, and "the first profile is not yet a strength-balanced opponent".
+
 ## Implemented Direction
 
 Requirements: see [computer-players spec](../openspec/changes/spec-the-computer-players/specs/computer-players/spec.md) (pending review).
