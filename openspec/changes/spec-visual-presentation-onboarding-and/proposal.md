@@ -32,6 +32,14 @@ The origin said only to specify behavior from the docs. The direction adds that 
 6. **Unlisted audio.** The docs do not mention the looping background music, its 0–100 volume slider (default 25) or its fade during the countdown. The ElevenLabs guide lists card-flip, peek and ready-confirmation sounds. The code does not play them, although some of the files exist.
 7. **Avatar decoration.** Herrasmiespokeri "top hats on avatars": implemented as a hat on the generated avatar. Avatars are made from the name's hash (colour and shape).
 
+## Conflicting sentences left in place (follow-up)
+
+These sentences sit outside the retired sections and still contradict the new specs. They are not retired here because they belong to other parts of the migration (turn/rules flow, scenario table). Follow-up: reword or retire them when their owning part migrates.
+
+- `docs/project-plan.md` "Confirmed Rules and Turn Experience": "Use a positive sound for personal success, a negative sound for taking the card, and a neutral sound for uninvolved players" and "a Finnish next-player announcement". Conflicts with `game-audio` (Event sounds) and `visual-presentation` (Resolution and next-turn display); see discrepancies 2 and 3.
+- `docs/rules-contract.md` "Phases and Commands": resolution "followed by 'Seuraavana: [name]'". Conflicts with the `Sun puheet!` / `<name>!` banner (discrepancy 3).
+- `docs/rules-contract.md` scenario R29: "Host selects Herrasmiespokeri before countdown". Implies the countdown lock rejected in discrepancy 1.
+
 ## Assumptions
 
 - The ElevenLabs guide is kept whole; only a link line is added. The alternative was to retire its "Recommended Approach" list. That list is a generation backlog, not app behavior.
