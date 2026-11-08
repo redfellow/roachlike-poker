@@ -28,6 +28,7 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 - Publicly show hand counts, exposed creatures, and the current challenge’s path and claims.
 - Brief automatic resolution animation and outcome sound, followed by a Finnish next-player announcement. Use a positive sound for personal success, a negative sound for taking the card, and a neutral sound for uninvolved players.
 - Show locked predictions after resolution with automatic emoji reactions based on aggregate prediction performance. These replace the proposed manual reaction buttons; exact emoji mapping remains open.
+> Overlap: the bullets below on saving recap history, rematch lobby and disconnected chairs are superseded in part by the pending change [spec-rooms-identity-spectators-reconnect](../openspec/changes/spec-rooms-identity-spectators-reconnect/proposal.md); retirement is a follow-up in the migration index. Room deletion contradicts "retains history" (proposal item 6).
 - Spotlight the loser and show a game recap and highlights. Save recap history across rematches and server restarts. Define measurable highlights without inferring belief from passing.
 - Rematch creates a fresh lobby populated by existing players; new players can join.
 - Grey out disconnected chairs. Host-confirmed removal and redistribution is an approved first-version house rule, subject to the constraints below.

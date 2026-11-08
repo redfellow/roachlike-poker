@@ -8,7 +8,7 @@ During a running match, only the host SHALL be able to remove a seat, and only o
 - **THEN** the command is rejected
 
 ### Requirement: Under-capacity seat is preserved
-When 3 or fewer non-removed seats remain, removal SHALL NOT change cards or phase. It SHALL mark the seat as waiting for a replacement and tell the table that a replacement or End game is needed. While a seat is waiting, game commands SHALL be rejected. The waiting state SHALL clear when the owner reconnects, a replacement takes the seat, or the host ends the match. Ending SHALL cancel any challenge and finish without a loser.
+When the match has 3 or fewer non-removed seats, including the one being removed, removal SHALL NOT change cards or phase. It SHALL mark the seat as waiting for a replacement and tell the table that a replacement or End game is needed. While a seat is waiting, game commands SHALL be rejected. The waiting state SHALL clear when the owner reconnects, a replacement takes the seat, or the host ends the match. Ending SHALL cancel any challenge and finish without a loser.
 
 #### Scenario: Three-player removal
 - **WHEN** the host removes an offline seat in a three-player match
@@ -30,6 +30,8 @@ After a removal, when the match was not in initiation by another seat, the new i
 
 ### Requirement: Removed seat is final
 A removed seat SHALL NOT be reclaimed during that match, including by exact-name join.
+
+A removed person whose device still holds the session token SHALL rejoin as a non-seated member who may watch. The token SHALL NOT restore the removed seat.
 
 #### Scenario: Name join after removal
 - **WHEN** the removed person joins by name

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Room creation and codes
-The server SHALL create a room on `POST /api/rooms` with a unique three-word code `first-second-third`, drawn from fixed word lists. A colliding code SHALL be resolved by stepping deterministically to the next unused combination. Several rooms SHALL exist at once.
+The server SHALL create a room on `POST /api/rooms` with a unique three-word code `first-second-third`, drawn from fixed word lists. A colliding code SHALL be resolved by stepping deterministically to the next unused combination. Several rooms SHALL exist at once. Room IDs are opaque strings, and any stored room ID SHALL still join its room.
 
 #### Scenario: Collision resolution
 - **WHEN** the random code is already in use

@@ -4,6 +4,8 @@ Status: B0 review draft. Confirmed rules below consolidate the interview. Items 
 
 ## Identities and Invariants
 
+> Overlap: superseded in part by the pending change [spec-rooms-identity-spectators-reconnect](../openspec/changes/spec-rooms-identity-spectators-reconnect/proposal.md); retirement is a follow-up listed in the migration index.
+
 - A room retains its invite link and match history. A rematch creates a new match in that room.
 - A seat owns a hand, exposed display, and turn obligations. A person controls a seat; a connection/device is only a way to control it.
 - Same-name recovery preserves person and seat. A voted replacement changes the person while preserving the seat and its obligations. Record the person responsible at the time of each action.
@@ -26,6 +28,8 @@ Status: B0 review draft. Confirmed rules below consolidate the interview. Items 
 Choose the starting player randomly. Dealing order is randomized once per match; extra-card positions are therefore distributed by the same deal rather than by a separate house rule.
 
 ## Phases and Commands
+
+> Overlap: superseded in part by the pending change [spec-rooms-identity-spectators-reconnect](../openspec/changes/spec-rooms-identity-spectators-reconnect/proposal.md); retirement is a follow-up listed in the migration index.
 
 | Phase | Command and actor | Result |
 | --- | --- | --- |
