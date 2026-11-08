@@ -1,0 +1,17 @@
+format: 1
+slug: spec-the-game-rules-from-the-rules-contr
+title: Spec the game rules from the rules contract
+x-harvaaja-card: 546b155e-d16c-4607-8ca4-6df8b39c5a78
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: No specs or active changes exist; the direction requires one new
+    OpenSpec change specifying current game-rule behavior and retiring the
+    migrated doc sections.
+  citations:
+    - "openspec/migration-index.md: Rules contract row Unmigrated"
+    - openspec/changes contains only archive/
+    - packages/game/src/index.ts createMatch/applyAction/eligibleTargets
+  revision: 9f583784-390a-4fce-b8bf-37ec56299eaf

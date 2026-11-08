@@ -20,11 +20,9 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 ## Confirmed Rules and Turn Experience
 
-- Adopt the official base-game corrections in `initial-info.md`: deal all cards for 3–6 players; two players remove ten unseen and use a five-card defeat threshold; resolution penalizes the most recent sender when the receiver is correct.
-- Choose the starting player randomly.
+- Migrated to [game-rules spec](../openspec/changes/game-rules-spec-in-packages-game-checked/specs/game-rules/spec.md) (pending archival; not yet in openspec/specs).
 - Prepare privately: card → target → claim → Send. Selections remain editable until Send.
 - No turn timers or mandatory response delays.
-- Peeking irrevocably commits to passing; no believe/bluff response afterward.
 - Publicly show hand counts, exposed creatures, and the current challenge’s path and claims.
 - Brief automatic resolution animation and outcome sound, followed by a Finnish next-player announcement. Use a positive sound for personal success, a negative sound for taking the card, and a neutral sound for uninvolved players.
 - Show locked predictions after resolution with automatic emoji reactions based on aggregate prediction performance. These replace the proposed manual reaction buttons; exact emoji mapping remains open.
