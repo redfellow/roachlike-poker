@@ -5,3 +5,16 @@ x-harvaaja-card: c00d635f-51bc-409b-9261-2b2e6327f2ed
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: split
+  rationale: User chose split by domain. Rules, rooms/identity, computer players,
+    achievements and presentation touch different docs and code, and each can be
+    specced and checked on its own.
+  citations:
+    - openspec/migration-index.md
+    - docs/rules-contract.md
+    - docs/project-plan.md
+    - docs/computer-players.md
+    - docs/achievement-ideas.md
+    - AGENTS.md#Specifications & Documentation
+  revision: 0b7a01fd-12c8-4839-89a2-a84da9ef208b
