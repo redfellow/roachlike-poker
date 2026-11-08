@@ -51,7 +51,7 @@ Requirements moved to OpenSpec (pending change `spec-rooms-identity-spectators-r
 - Each prediction concerns the current claim. Keep it private until the card is resolved.
 - Lock predictions when the receiver acts. A pass opens a new prediction opportunity for eligible players on the new claim.
 - Reveal the locked predictions together after final resolution.
-- Eligibility, privacy, locking and reveal above stay here until a reviewed game-rules spec replaces them; see also the rules contract, [Passing and Private Predictions](rules-contract.md#passing-and-private-predictions).
+- Eligibility, privacy and locking above stay here until a reviewed [game-rules spec](../openspec/specs/game-rules/spec.md) replaces them. The reveal bullet is unmigrated. See also the rules contract, [Passing and Private Predictions](rules-contract.md#passing-and-private-predictions).
 - Prediction scoring (including that cancelled challenges earn no prediction points), recap statistics, attribution, ties and award conditions and copy: see the pending [match-achievements spec](../openspec/changes/spec-match-achievements-and-predictions/specs/match-achievements/spec.md) (moves to `openspec/specs/match-achievements/spec.md` on integration).
 - Keep the achievements in [achievement-ideas.md](achievement-ideas.md). Their current crude/dark humor is the upper limit: do not make the copy dirtier. Unresolved earlier proposals and open implementation details are recorded there.
 
