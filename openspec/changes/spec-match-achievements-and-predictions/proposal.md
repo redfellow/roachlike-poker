@@ -8,7 +8,12 @@ Match achievements and prediction scoring are implemented (`packages/game/src/in
 - Retire the requirement content of `docs/achievement-ideas.md` (the status line's attribution/tie rules and the award table) and the scoring, attribution and tie bullets of `docs/project-plan.md` "Predictions and Match Achievements", replacing them with links to the new spec. The confirmed eligibility, privacy and locking bullets are left for the game-rules change `game-rules-spec-in-packages-game-checked`, whose prediction eligibility, revision/locking and view-boundary requirements cover them; they stay in the project plan until that coverage is reviewed. The reveal bullet stays there unmigrated. Keep the tone/filth limit rationale and the open implementation details, and the doc's proposed conditions as an unresolved record (see Discrepancies).
 - Update the migration-index rows for those two documents to Partial with the pending change linked.
 - In the migration index, also repair the Computer players row's spec link to the archived path `changes/archive/2026-11-08-spec-the-computer-players/...` (link repair only; coverage unchanged), and add to the Rules contract row a pointer that its remaining prediction scoring and the scoring part of R22 overlap with this spec, with their retirement left as an explicit follow-up.
+- The game-rules change is archived (`changes/archive/2026-11-08-game-rules-spec-in-packages-game-checked/`) and synced into `specs/game-rules/spec.md`; the two index rows this change edits (Rules contract, Project plan: Predictions and Match Achievements) link those paths.
 - No code changes.
+
+## Follow-ups
+
+- Stale links to the game-rules change outside this change's scope, left as found: the migration index's Project plan row (still `changes/game-rules-spec-in-packages-game-checked/...`), the index intro sentence "No existing capability has yet been migrated into `specs/`" (now untrue), and the game-rules link in `docs/project-plan.md` "Confirmed Rules and Turn Experience" ("pending archival; not yet in openspec/specs"). Repair them in the game-rules follow-up or the next index update.
 
 Direction changed the origin: it made this one child of a split migration (one change, retire migrated sections, update the index, code wins over docs, no code changes) and made it wait for the game-rules part, so prediction eligibility, revision and locking are left to that spec.
 
