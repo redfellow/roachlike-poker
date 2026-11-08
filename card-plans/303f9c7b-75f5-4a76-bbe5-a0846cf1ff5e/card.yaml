@@ -1,0 +1,16 @@
+format: 1
+slug: spec-match-achievements-and-predictions
+title: Spec match achievements and predictions scoring
+x-harvaaja-card: 303f9c7b-75f5-4a76-bbe5-a0846cf1ff5e
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: No specs or active changes exist; achievements are an unmigrated
+    capability needing a new retrospective change.
+  citations:
+    - "openspec/migration-index.md: Achievement ideas row Unmigrated"
+    - packages/game/src/index.ts achievements()
+    - apps/web/src/strings.fi.ts history.awards
+  revision: c9f9d82a-705a-4d24-8cc0-80e5eb728aaa
