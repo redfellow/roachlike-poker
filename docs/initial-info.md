@@ -188,9 +188,7 @@ Select New Target            │
 
 ## 6. Agreed Digital Presentation
 
-- Finnish interface and creature names; response buttons are **Uskon / En usko**. English is deferred.
-- No turn timers or mandatory waiting period before responding.
-- Resolve with a brief automatic reveal/transfer animation and outcome sound, then briefly show **Seuraavana: [player name]** before the next turn. At game over, show the result instead. Sounds reflect personal success/failure; uninvolved players hear a neutral sound.
+- Finnish interface, no turn timers, resolution animation and sounds: see the [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) and [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) specs (pending change `spec-visual-presentation-onboarding-and`).
 - Reveal locked predictions after resolution, with automatic emojis based on overall prediction performance. No separate manual reaction buttons are currently planned.
 - Spotlight the loser and present a recap with evidence-based highlights. Highlight definitions remain open; passing alone does not prove someone believed a claim.
 - Rematch opens a fresh lobby with existing players, allowing new players to join. Save recap history across rematches and server restarts. Rooms are listed openly by default, but a host may make one private; every room retains an invite link and new links use memorable three-word codes. The server supports multiple independent rooms.
@@ -203,8 +201,6 @@ Rules reference: [Publisher’s base-game rules](https://www.dreimagier.de/files
 
 ### Visual and Tutorial Decisions
 
-Use a playful, darkish, slightly gross adult style, never childish or anime. Keep animation restrained with retro game sound/feel. Support portrait mobile and privately grouped creature stacks in the local hand; other players must never receive these group details. Provide mute, reduced motion, Finnish rules, and contextual help. A lobby checkbox enables a guided first turn, defaults on, and remembers the choice per device.
-
-The MVP includes host-selected visual themes. The selection is visible to everyone, locks when countdown begins, persists across rematches, and is recorded as a versioned reference in recap history. Theme packs may change card artwork and names, card backs, table colors, related wording, avatar decoration, and achievement title/flavor; rules, achievement conditions, and sounds remain shared. Örkkipokka is the default/fallback. Herrasmiespokeri is the second MVP pack, with eight finished character portraits: Härvääjä, Kiltti, Tilasto, Murre, Lurkki, Viilaaja, Nippeli, and Pamppu.
+Presentation (Finnish interface, layout, hand grouping, reduced motion, themes), onboarding and sound behavior: see the [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md), [onboarding](../openspec/changes/spec-visual-presentation-onboarding-and/specs/onboarding/spec.md) and [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) specs (pending change `spec-visual-presentation-onboarding-and`).
 
 MVP layout verification uses desktop Chrome at desktop and mobile dimensions; separate iPhone testing is deferred. Future integrated media allows temporary microphone mute/camera-off but pauses gameplay when either occurs. Voice activation may be explored later. The external-call MVP does not enforce media-based pauses.

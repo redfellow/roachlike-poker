@@ -4,6 +4,8 @@
 
 This document describes how to use ElevenLabs to create game-ready sound effects. It is based on the current public ElevenLabs overview and Sound Effects API documentation.
 
+In-game sound behavior is specified in [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
+
 ## Recommended Approach
 
 Use ElevenLabs for short, non-voice sound assets such as:

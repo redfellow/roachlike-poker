@@ -72,13 +72,10 @@ Detailed rules and acceptance scenarios: [rules-contract.md](rules-contract.md).
 
 - Playful, darkish, somewhat gross adult aesthetic; not childish or anime.
 - Restrained animation and retro game sound/feel, with Mario, Sonic, and Commodore 64 as tonal references, not asset sources.
-- Support fully playable portrait mobile: own hand below, central claim, compact opponent panels with public exposed-card counts, emphasis on sender and receiver.
-- Group the local hand into creature stacks. Group identities, counts, order, and selection are private; opponents see only the total hand count. Do not send private grouping details to other clients.
-- Provide mute and reduced-motion options.
-- Include concise Finnish rules and contextual action explanations.
-- Include a guided-first-turn checkbox in the lobby, default on, remembered per device. Guidance must be local and must not reveal hidden choices to other players. Show dismissible local hints during the first actual turn, without a separate practice game or pausing other players.
-- Treat visual themes as an MVP game setting. The host chooses a visual tile in the lobby before countdown; everyone sees changes immediately and the selection persists through the game and rematches. A theme can replace card art and names, card backs, table colors, theme-specific wording, and achievement titles/flavor while keeping mechanics, sounds, and factual achievement conditions shared. Store theme ID and version in recap history and fall back to Örkkipokka when an old theme is unavailable.
-- Ship Örkkipokka as the default and Herrasmiespokeri as the second MVP theme. Herrasmiespokeri uses maroon/brick red, black, fiery orange, brass/gold, worn parchment, top hats on avatars, and the fixed eight-card mapping Härvääjä, Kiltti, Tilasto, Murre, Lurkki, Viilaaja, Nippeli, and Pamppu.
+- Layout, private hand grouping and the resolution display: see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
+- Mute, music and sound behavior: see [game-audio](../openspec/changes/spec-visual-presentation-onboarding-and/specs/game-audio/spec.md) (pending change `spec-visual-presentation-onboarding-and`). Reduced motion: see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md).
+- Rules view and guided first-turn hints: see [onboarding](../openspec/changes/spec-visual-presentation-onboarding-and/specs/onboarding/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
+- Visual themes and the shipped theme packs (Örkkipokka, Herrasmiespokeri): see [visual-presentation](../openspec/changes/spec-visual-presentation-onboarding-and/specs/visual-presentation/spec.md) (pending change `spec-visual-presentation-onboarding-and`).
 
 ## Provisional Work Buckets
 
