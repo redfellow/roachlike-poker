@@ -5,3 +5,13 @@ x-harvaaja-card: 7236cfa1-d5c9-4e6a-b2ec-d5fafe236656
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: No active changes or main specs exist; computer-player behavior is
+    unmigrated, so a new retrospective change is required.
+  citations:
+    - "openspec/migration-index.md: Computer players row Unmigrated"
+    - docs/computer-players.md
+    - apps/server/src/runtime.ts
+    - packages/game/src/index.ts
+  revision: 95d2535f-f6d9-44fd-93e9-c38f6a5e3270
