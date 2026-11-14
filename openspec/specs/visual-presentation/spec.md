@@ -20,11 +20,15 @@ The table SHALL show the person's own hand below the play area, the current clai
 - **THEN** each seat shows its hand count and per-creature exposed counts, and the seat that must act is marked active
 
 ### Requirement: Private hand grouping
-A person's own hand SHALL be shown as one stack per creature with a count. Other people SHALL see only that person's total hand count. No grouping or selection details SHALL be sent to other clients.
+A person's own hand SHALL be shown as one stack per creature with a count. A stack of two or more cards SHALL look like layered cards, with one visible layer per card up to four layers, and SHALL keep its `×N` count. Other people SHALL see only that person's total hand count. No grouping or selection details SHALL be sent to other clients.
 
 #### Scenario: Hidden hands
 - **WHEN** two people view the same match
 - **THEN** each sees only their own creature stacks and the other's hand count
+
+#### Scenario: Duplicate cards appear stacked
+- **WHEN** a person holds three cards of one creature
+- **THEN** that creature is shown as one selectable card with three visible layers and the count `×3`
 
 ### Requirement: Resolution and next-turn display
 On resolution, every client SHALL briefly show the receiver's decision, the final claim next to the true card stamped `TOTTA` or `VALHE`, and who takes the card (or that the round was cancelled). When predictions exist, it SHALL show the correct-prediction count with 👏 (all correct), 😱 (none correct) or 😂 (mixed). After a new initiator is set, a banner SHALL show `Sun puheet!` to that person and `<name>!` to others. At game over, the end panel shows the loser and the reason instead.
