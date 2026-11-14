@@ -99,6 +99,12 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await pages[2]!.getByRole("button", { name: "Liity pöytään" }).click();
 		await expect(pages[2]!.getByText("KATSOMOSSA · VAIN JULKINEN TIETO")).toBeVisible();
 		await expect(pages[2]!.locator(".hand-card")).toHaveCount(0);
+		// Duplicate cards appear stacked: each copy adds a layer behind the front card, up to four layers in total.
+		for (const page of pages.slice(0, 2)) {
+			const stacks = await page.locator(".hand-card").evaluateAll(cards => cards.map(card => ({ count: Number(card.querySelector(".hand-card__count")?.textContent?.replace("×", "")), layers: card.querySelectorAll(".hand-card__layer").length })));
+			expect(stacks.length).toBeGreaterThan(0);
+			for (const stack of stacks) { expect(stack.layers).toBe(Math.min(stack.count, 4) - 1); }
+		}
 		const actor = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
 		const receiver = actor === pages[0] ? pages[1]! : pages[0]!;
 		if (actor === pages[0]) {
