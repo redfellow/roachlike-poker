@@ -69,7 +69,6 @@ export const FI = {
 		muted: "Äänet päälle",
 		mute: "Mykistä äänet",
 		mutedShort: "♪ pois",
-		soundOn: "♪ päällä",
 		soundLabel: "Äänet",
 		rules: "Säännöt",
 		history: "Historia",
