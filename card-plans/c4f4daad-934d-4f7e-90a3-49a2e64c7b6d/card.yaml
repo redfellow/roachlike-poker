@@ -1,0 +1,17 @@
+format: 1
+slug: player-accessible-game-history-viewer
+title: Player-accessible game history viewer
+x-harvaaja-card: c4f4daad-934d-4f7e-90a3-49a2e64c7b6d
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: Moving History from the More menu to a visible topbar button is a new
+    observable placement contract; no spec covers it today and no active change
+    exists.
+  citations:
+    - "openspec/specs/persistence/spec.md: Recap history"
+    - apps/web/src/main.tsx:393 History button inside topbar__more
+    - tests/e2e/game.spec.ts:124
+  revision: 38c01e10-955a-4c55-b347-588f74d150d9
