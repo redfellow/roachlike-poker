@@ -5,3 +5,14 @@ x-harvaaja-card: 46578bce-e423-4633-9ffe-3125f367f4d6
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: no-spec-change
+  rationale: Same confirmations, same wording and outcomes; only the mechanism
+    moves from window.confirm (blocked on DuckDuckGo mobile) to the existing
+    in-app Modal. No spec requirement names the native popup.
+  citations:
+    - apps/web/src/main.tsx:406 leave-table uses confirm()
+    - apps/web/src/main.tsx:291 existing Modal component
+    - openspec/specs/departures/spec.md:8 host-confirmed removal (mechanism
+      unspecified)
+  revision: 5b76b38f-a4b2-4817-9b49-9107f64d22ff
