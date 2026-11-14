@@ -1498,6 +1498,13 @@ select {
 	animation: table-handoff 1.5625s cubic-bezier(.2, .8, .25, 1) both;
 }
 
+.handoff-card--targeted {
+	left: calc(var(--handoff-from-x) - 31px);
+	top: calc(var(--handoff-from-y) - 43px);
+	z-index: 7 !important;
+	animation-name: table-handoff-targeted;
+}
+
 .handoff-card span {
 	font-size: 34px;
 }
@@ -3295,6 +3302,11 @@ summary {
 	display: none;
 }
 
+.app--reduced .seat--receiving {
+	filter: brightness(1.3);
+	box-shadow: 0 0 0 2px #c8d77e, 0 0 30px #c8d77e77;
+}
+
 .app--reduced .play-area--answer-correct::after,
 .app--reduced .play-area--answer-wrong::after {
 	opacity: 0;
@@ -3380,6 +3392,29 @@ summary {
 	}
 }
 
+@keyframes table-handoff-targeted {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(-12deg) scale(.6);
+	}
+
+	12% {
+		opacity: 1;
+		transform: translate(0, -10px) rotate(-6deg) scale(1);
+	}
+
+	55% {
+		opacity: 1;
+		transform: translate(var(--handoff-to-x), var(--handoff-to-y)) rotate(6deg) scale(.82);
+	}
+
+	75%,
+	100% {
+		opacity: 0;
+		transform: translate(var(--handoff-to-x), var(--handoff-to-y)) rotate(0deg) scale(.5);
+	}
+}
+
 @keyframes private-peek {
 
 	0%,
@@ -3438,14 +3473,14 @@ summary {
 @keyframes handoff-receiver {
 
 	0%,
-	48%,
+	50%,
 	100% {
 		filter: none;
 		scale: 1;
 	}
 
-	67%,
-	88% {
+	58%,
+	78% {
 		filter: brightness(1.3);
 		box-shadow: 0 0 30px #c8d77e77;
 		scale: 1.025;
