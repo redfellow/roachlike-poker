@@ -2354,6 +2354,24 @@ select {
 	text-align: center;
 }
 
+.confirmation {
+	max-width: 480px;
+	margin: auto;
+	text-align: center;
+}
+
+.confirmation__question {
+	color: var(--cream);
+	line-height: 1.65;
+}
+
+.confirmation__actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 12px;
+}
+
 .tutorial p {
 	color: var(--cream);
 	line-height: 1.65;

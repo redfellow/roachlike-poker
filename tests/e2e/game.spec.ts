@@ -42,6 +42,39 @@ test("first-turn response guidance can be dismissed above the highlighted contro
 	finally { for (const context of contexts) { await context.close(); } }
 });
 
+test("a seated player leaves the lobby through the in-app confirmation", async function ({ browser, request }) {
+	const create = await request.post("/api/rooms");
+	expect(create.ok()).toBe(true);
+	const { id } = await create.json() as { id: string };
+	const contexts = await Promise.all([browser.newContext(), browser.newContext({ viewport: { width: 390, height: 844 } })]);
+	const pages = await Promise.all(contexts.map(context => context.newPage()));
+	try {
+		for (let index = 0; index < pages.length; index++) {
+			const page = pages[index]!;
+			await page.goto(`/r/${id}`);
+			await page.getByLabel("Millä nimellä sinua kirotaan?").fill(`Lähtijä ${index + 1}`);
+			await page.getByRole("button", { name: "Liity pöytään" }).click();
+			await expect(page.getByText("Pöytä on katettu.")).toBeVisible();
+		}
+		const [host, guest] = pages as [typeof pages[0], typeof pages[0]];
+		const hostPlayers = host.locator(".lobby-player");
+		await expect(hostPlayers).toHaveCount(2);
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		const dialog = guest.getByRole("dialog");
+		await expect(dialog).toBeVisible();
+		await dialog.getByRole("button", { name: "Peruuta" }).click();
+		await expect(dialog).toBeHidden();
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		await guest.keyboard.press("Escape");
+		await expect(dialog).toBeHidden();
+		await expect(hostPlayers).toHaveCount(2);
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		await dialog.getByRole("button", { name: "Kyllä" }).click();
+		await expect(hostPlayers).toHaveCount(1);
+	}
+	finally { for (const context of contexts) { await context.close(); } }
+});
+
 test("private room, full game, recap, rematch, hidden hands and reload", async function ({ browser, request }) {
 	test.setTimeout(180000);
 	const create = await request.post("/api/rooms");
