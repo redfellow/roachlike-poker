@@ -356,9 +356,16 @@ describe("authoritative room transport", function () {
 		const host = await connect(url, roomId, "A");
 		const guest = await connect(url, roomId, "B");
 		await synced([host, guest]);
-		const reply = await guest.socket.timeout(2000).emitWithAck("command", { id: randomUUID(), revision: guest.state!.revision, action: { kind: "leave-table" } }) as Reply;
+		const guestId = guest.state!.me;
+		let closed = false;
+		let disconnected = false;
+		guest.socket.on("lobby-closed", function () { closed = true; });
+		guest.socket.on("disconnect", function () { disconnected = true; });
+		const staleRevision = guest.state!.revision - 1;
+		const reply = await guest.socket.timeout(2000).emitWithAck("command", { id: randomUUID(), revision: staleRevision, action: { kind: "leave-table" } }) as Reply;
 		expect(reply.ok).toBe(true);
-		await waitFor(() => !host.state!.members.some(m => m.id === guest.state!.me));
+		await waitFor(() => closed && disconnected);
+		await waitFor(() => !host.state!.members.some(m => m.id === guestId));
 		expect(host.state!.members).toHaveLength(1);
 		expect(host.state!.members[0]!.name).toBe("A");
 		expect(runtime.store.all()).toHaveLength(1);
