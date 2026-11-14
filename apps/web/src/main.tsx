@@ -361,6 +361,8 @@ function Session({ roomId, name, soundLevel, setSoundLevel, returnToJoin }: { ro
 function Table({ state, command, busy, soundLevel, reduced, guided, time }: { state: RoomView; command: (action: RoomAction) => Promise<void>; busy: boolean; soundLevel: number; reduced: boolean; guided: boolean; time: number }): ReactElement {
 	const game = state.game!;
 	const theme = themeFor(game.theme);
+	const soundLevelRef = useRef(soundLevel);
+	soundLevelRef.current = soundLevel;
 	const me = game.seats.find(s => s.personId === state.me && !s.removed);
 	const claim = game.challenge?.claims.at(-1);
 	const previousClaim = game.challenge?.claims.at(-2);
@@ -398,9 +400,9 @@ function Table({ state, command, busy, soundLevel, reduced, guided, time }: { st
 		if (isNewHandoff && latestClaim) {
 			setNextTurnSeat(null);
 			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
-			if (soundLevel > 0) {
+			if (soundLevelRef.current > 0) {
 				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
-				playSound(selectRandomAudio(variants), 0.48, soundLevel);
+				playSound(selectRandomAudio(variants), 0.48, soundLevelRef.current);
 			}
 			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
@@ -418,7 +420,7 @@ function Table({ state, command, busy, soundLevel, reduced, guided, time }: { st
 			return;
 		}
 		previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
-	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, soundLevel, reduced]);
+	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, reduced]);
 	useEffect(function () {
 		if (!nextTurnSeat || result) { return; }
 		const timer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 2800);
@@ -470,14 +472,14 @@ function Table({ state, command, busy, soundLevel, reduced, guided, time }: { st
 		return function () { cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener("resize", schedule); };
 	}, [game.challenge?.id, game.challenge?.claims.length]);
 	function playVariant(variant: string): void {
-		playSound(variant, 0.7, soundLevel);
+		playSound(variant, 0.7, soundLevelRef.current);
 	}
 	useEffect(function () {
 		const resolution = game.lastResolution;
 		if (!resolution || seen.current === resolution.id) { return; }
 		seen.current = resolution.id; setResult(true); setAnswerFlash(false);
 		const audioTimers: number[] = [];
-		if (soundLevel > 0 && !resolution.cancelled) {
+		if (soundLevelRef.current > 0 && !resolution.cancelled) {
 			playVariant(selectRandomAudio(resolution.receiverBelieves ? BELIEVE_VARIANTS : DISBELIEVE_VARIANTS));
 			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(CHALLENGE_REVEAL_VARIANTS)), 300));
 			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(PENALTY_TRANSFER_VARIANTS)), 650));
@@ -493,7 +495,7 @@ function Table({ state, command, busy, soundLevel, reduced, guided, time }: { st
 		const flashStartTimer = setTimeout(() => setAnswerFlash(!reduced), reduced ? 100 : 2100);
 		const flashEndTimer = setTimeout(() => setAnswerFlash(false), reduced ? 120 : 7800);
 		return function () { clearTimeout(resultTimer); clearTimeout(flashStartTimer); clearTimeout(flashEndTimer); audioTimers.forEach(timer => clearTimeout(timer)); };
-	}, [game.lastResolution?.id, soundLevel, reduced, state.me]);
+	}, [game.lastResolution?.id, reduced, state.me]);
 	const resolution = game.lastResolution;
 	const personalOutcomePositive = resolution && (resolution.receiverPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me) ? resolution.penaltyPersonId !== state.me : null;
 	const outcome = resolution?.claims.flatMap(c => c.predictions.map(p => p.believes === (c.creature === resolution.card.creature))) ?? [];
@@ -514,8 +516,8 @@ function Table({ state, command, busy, soundLevel, reduced, guided, time }: { st
 		const promptKey = `${game.challenge.id}:${game.challenge.claims.length}:${me.id}`;
 		if (responsePromptSeen.current === promptKey) { return; }
 		responsePromptSeen.current = promptKey;
-		playSound(RESPONSE_PROMPT_VARIANT, 0.6, soundLevel);
-	}, [choosingResponse, game.challenge?.id, game.challenge?.claims.length, me?.id, soundLevel]);
+		playSound(RESPONSE_PROMPT_VARIANT, 0.6, soundLevelRef.current);
+	}, [choosingResponse, game.challenge?.id, game.challenge?.claims.length, me?.id]);
 	const tutorial = guided && me?.id === required ? game.phase === "initiation" ? "start" : game.phase === "response" || game.phase === "passing" ? "response" : null : null;
 	const showTutorial = tutorial !== null && !dismissedTutorials.has(tutorial);
 	function dismissTutorial(): void {

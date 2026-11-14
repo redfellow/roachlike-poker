@@ -51,13 +51,13 @@ describe("normalizationGain", function () {
 
 describe("soundVolume", function () {
 	it.each([
-		{ base: 0.5, level: 100, expected: 0.5 },
-		{ base: 0.5, level: 50, expected: 0.25 },
-		{ base: 0.7, level: 0, expected: 0 },
-		{ base: 0.6, level: 150, expected: 0.6 },
-		{ base: 0.6, level: -20, expected: 0 },
-		{ base: 0.6, level: Number.NaN, expected: 0 },
-	])("Muted device: scales base $base at level $level to $expected", function ({ base, level, expected }) {
+		{ name: "Volume during play: full level keeps the base volume", base: 0.5, level: 100, expected: 0.5 },
+		{ name: "Volume during play: half level halves the base volume", base: 0.5, level: 50, expected: 0.25 },
+		{ name: "Muted device: level 0 silences the sound", base: 0.7, level: 0, expected: 0 },
+		{ name: "clamps a level above 100 to the base volume", base: 0.6, level: 150, expected: 0.6 },
+		{ name: "clamps a negative level to silence", base: 0.6, level: -20, expected: 0 },
+		{ name: "treats an invalid level as silence", base: 0.6, level: Number.NaN, expected: 0 },
+	])("$name", function ({ base, level, expected }) {
 		expect(soundVolume(base, level)).toBeCloseTo(expected);
 	});
 });
