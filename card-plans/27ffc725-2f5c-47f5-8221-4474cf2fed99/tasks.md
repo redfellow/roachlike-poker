@@ -4,7 +4,7 @@
   Tests to update: apps/server/src/runtime.test.ts ("allows a player to leave the lobby")
   - proof: `npx vitest run apps/server/src/runtime.test.ts`
   - proof: `npx eslint apps/server/src/runtime.ts apps/server/src/runtime.test.ts`
-  - proof: `npx tsc -p apps/server --noEmit`
+  - proof: `npm run typecheck`
 
 ## Manual checks after merge (The user)
 - In a lobby with two people, press "Poistu pöydästä" once while the other person toggles ready. You should land on the front page.
