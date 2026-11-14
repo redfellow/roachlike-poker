@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizationGain, selectNextAudio, selectRandomAudio } from "./audio";
+import { normalizationGain, selectNextAudio, selectRandomAudio, soundVolume } from "./audio";
 
 describe("selectNextAudio", function () {
 	it("rotates through every card-flip variant without repeating until all are used", function () {
@@ -46,5 +46,18 @@ describe("normalizationGain", function () {
 		expect(normalizationGain(0.46)).toBeCloseTo(2);
 		expect(normalizationGain(0.01)).toBe(4);
 		expect(normalizationGain(0.46, 0.5)).toBeCloseTo(1);
+	});
+});
+
+describe("soundVolume", function () {
+	it.each([
+		{ base: 0.5, level: 100, expected: 0.5 },
+		{ base: 0.5, level: 50, expected: 0.25 },
+		{ base: 0.7, level: 0, expected: 0 },
+		{ base: 0.6, level: 150, expected: 0.6 },
+		{ base: 0.6, level: -20, expected: 0 },
+		{ base: 0.6, level: Number.NaN, expected: 0 },
+	])("Muted device: scales base $base at level $level to $expected", function ({ base, level, expected }) {
+		expect(soundVolume(base, level)).toBeCloseTo(expected);
 	});
 });

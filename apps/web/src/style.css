@@ -186,66 +186,7 @@ small {
 	text-transform: uppercase;
 }
 
-.sound-toggle {
-	min-height: 40px;
-	padding: 6px 10px;
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	border: 1px solid transparent;
-	border-radius: 5px;
-	color: #bcbfb0;
-	cursor: pointer;
-	font-size: 11px;
-	font-weight: 700;
-}
-
-.sound-toggle:hover {
-	background: #ffffff09;
-}
-
-.sound-toggle input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
-}
-
-.sound-toggle__track {
-	width: 32px;
-	height: 18px;
-	padding: 2px;
-	border: 1px solid #646b54;
-	border-radius: 999px;
-	background: #30352b;
-	transition: background .18s, border-color .18s;
-}
-
-.sound-toggle__track>span {
-	display: block;
-	width: 12px;
-	height: 12px;
-	border-radius: 50%;
-	background: #9da18f;
-	transition: transform .18s, background .18s;
-}
-
-.sound-toggle input:checked+.sound-toggle__track {
-	border-color: var(--lime);
-	background: #4a5738;
-}
-
-.sound-toggle input:checked+.sound-toggle__track>span {
-	background: var(--lime);
-	transform: translateX(14px);
-}
-
-.sound-toggle input:focus-visible+.sound-toggle__track {
-	outline: 3px solid var(--lime);
-	outline-offset: 3px;
-}
-
-.music-volume {
+.sound-volume {
 	min-height: 40px;
 	padding: 6px 8px;
 	display: inline-flex;
@@ -256,13 +197,13 @@ small {
 	font-weight: 700;
 }
 
-.music-volume input {
+.sound-volume input {
 	width: 82px;
 	padding: 12px 0 !important;
 	accent-color: var(--lime);
 }
 
-.music-volume output {
+.sound-volume output {
 	min-width: 30px;
 	color: var(--muted);
 	font-size: 9px;
@@ -2577,16 +2518,6 @@ th {
 	background: #4c291f;
 }
 
-.theme--herrasmiespokeri .sound-toggle__track {
-	border-color: #76502e;
-	background: #321b16;
-}
-
-.theme--herrasmiespokeri .sound-toggle input:checked+.sound-toggle__track {
-	border-color: var(--lime);
-	background: #704228;
-}
-
 .theme--herrasmiespokeri .badge {
 	background: #4b291f;
 }
@@ -3930,26 +3861,16 @@ summary {
 		font-size: 10px;
 	}
 
-	.sound-toggle {
-		padding: 5px 7px;
-		gap: 5px;
-		font-size: 9px;
-	}
-
-	.sound-toggle__label {
-		display: none;
-	}
-
-	.music-volume {
+	.sound-volume {
 		gap: 4px;
 		padding: 5px 4px;
 	}
 
-	.music-volume>span {
+	.sound-volume>span {
 		display: none;
 	}
 
-	.music-volume input {
+	.sound-volume input {
 		width: 65px;
 	}
 

@@ -14,6 +14,11 @@ export function selectRandomAudio(variants: readonly string[], random = Math.ran
 	return selected;
 }
 
+export function soundVolume(base: number, level: number): number {
+	const safeLevel = Number.isFinite(level) ? Math.max(0, Math.min(100, level)) : 0;
+	return base * safeLevel / 100;
+}
+
 const buffers = new Map<string, Promise<AudioBuffer>>();
 const peaks = new Map<string, number>();
 let context: AudioContext | null = null;
