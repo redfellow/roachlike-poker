@@ -1,0 +1,18 @@
+format: 1
+slug: clear-indication-of-a-card-s-destination
+title: Clear indication of a card's destination lane after moving it in the
+  mobile view
+x-harvaaja-card: 4126027a-e6ec-43e3-9a13-a5e95ba092fe
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: "Adds an observable contract: the handoff card visibly travels into
+    the receiving seat panel. No active change covers handoff presentation."
+  citations:
+    - "openspec/specs/visual-presentation/spec.md: Table layout"
+    - "openspec/specs/visual-presentation/spec.md: Reduced motion"
+    - apps/web/src/main.tsx:600 handoff-card
+    - apps/web/src/style.css:3300 table-handoff
+  revision: 3f52619c-5d3e-4823-a629-3662b600b62f

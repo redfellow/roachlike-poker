@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { createRuntime, type Runtime } from "./runtime";
+import { assignPlayerIcon, createRuntime, type Runtime } from "./runtime";
 import { Store } from "./store";
 import type { Reply, RoomAction, RoomView } from "@torakka/protocol";
 
@@ -331,6 +331,32 @@ describe("authoritative room transport", function () {
 		expect(restored.state!.game!.id).toBe(ended.id);
 		expect(restored.state!.game!.phase).toBe("ended");
 	});
+	it("Players at one table look different / Icon survives a new game: icons are distinct and kept across rematch and reconnect", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		for (let index = 0; index < 5; index++) { expect((await act(host, { kind: "add-computer" })).ok).toBe(true); }
+		const icons = new Map(host.state!.members.map(member => [member.id, member.icon]));
+		expect(new Set([...icons.values()].map(icon => icon.shape)).size).toBe(6);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		if (host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); }
+		const firstGameId = host.state!.game!.id;
+		expect((await act(host, { kind: "rematch" })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game) && host.state!.game!.id !== firstGameId);
+		expect(new Map(host.state!.members.map(member => [member.id, member.icon]))).toEqual(icons);
+		host.socket.disconnect();
+		const returned = await connect(url, roomId, "A", host.token);
+		expect(new Map(returned.state!.members.map(member => [member.id, member.icon]))).toEqual(icons);
+	});
+	it.each([
+		{ taken: [], expected: { shape: 0, colour: 0 } },
+		{ taken: [{ shape: 0, colour: 0 }], expected: { shape: 1, colour: 1 } },
+		{ taken: [0, 1, 2, 3, 4, 5].map(shape => ({ shape, colour: shape })), expected: { shape: 0, colour: 6 } },
+		{ taken: [{ shape: 1, colour: 0 }, { shape: 2, colour: 1 }], expected: { shape: 0, colour: 2 } }
+	])("assigns the least-used shape and an unused colour when $taken.length icons are taken", function ({ taken, expected }) {
+		expect(assignPlayerIcon(taken)).toEqual(expected);
+	});
 	it.each([2, 3, 6])("completes a solo %i-seat game with fair computer turns", async function (seatCount) {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 0 });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
@@ -470,6 +496,7 @@ describe("authoritative room transport", function () {
 		const { runtime } = await start(path, { now: () => 1_000_000 });
 		expect(runtime.store.all()).toHaveLength(1);
 		expect((JSON.parse(runtime.store.all()[0]!) as { lastActivityAt: number }).lastActivityAt).toBe(1_000_000);
+		expect((JSON.parse(runtime.store.all()[0]!) as { members: { icon: unknown }[] }).members[0]!.icon).toEqual({ shape: 0, colour: 0 });
 	});
 	it("ignores stale persisted rooms whose members are all offline", async function () {
 		const dir = mkdtempSync(join(tmpdir(), "torakka-room-cleanup-"));
