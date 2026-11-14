@@ -5,3 +5,13 @@ x-harvaaja-card: b8a98e58-0bc9-45f0-a809-bf3f68578dbf
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: "Removes the Background music requirement and replaces the Sound
+    toggle with a volume slider: changes approved game-audio contracts. No
+    active changes exist."
+  citations:
+    - "openspec/specs/game-audio/spec.md#Requirement: Sound toggle"
+    - "openspec/specs/game-audio/spec.md#Requirement: Background music"
+    - apps/web/src/main.tsx:393
+  revision: 44f605a4-a51a-42e2-a787-c163da015afb
