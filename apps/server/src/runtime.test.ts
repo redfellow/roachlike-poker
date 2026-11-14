@@ -401,9 +401,14 @@ describe("authoritative room transport", function () {
 		const { runtime, url } = await start();
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const host = await connect(url, roomId, "A");
+		let closed = false;
+		let disconnected = false;
+		host.socket.on("lobby-closed", function () { closed = true; });
+		host.socket.on("disconnect", function () { disconnected = true; });
 		const reply = await host.socket.timeout(2000).emitWithAck("command", { id: randomUUID(), revision: host.state!.revision, action: { kind: "leave-table" } }) as Reply;
 		expect(reply.ok).toBe(true);
 		await waitFor(() => runtime.store.all().length === 0);
+		await waitFor(() => closed && disconnected);
 	});
 	it("allows the host to close the lobby and rejects new joins", async function () {
 		const { runtime, url } = await start();
