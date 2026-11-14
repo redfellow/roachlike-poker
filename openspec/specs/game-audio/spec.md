@@ -6,11 +6,15 @@ Define in-game sound effects, music and mute behavior.
 ## Requirements
 
 ### Requirement: Sound toggle
-The topbar SHALL offer a `Äänet` switch, stored per device (`torakka:muted`) and default on. When sound is off, no event sound, click sound or countdown tick SHALL play.
+The topbar SHALL offer an `Äänet` volume slider from 0 to 100 on the landing page, in the lobby, during play and after a match, stored per device (`torakka:sound-volume`) and default 100. It SHALL scale every event sound, click sound and countdown tick. At 0, no event sound, click sound or countdown tick SHALL play. There SHALL be no separate on/off switch.
 
 #### Scenario: Muted device
-- **WHEN** sound is off and a card resolves
+- **WHEN** the slider is at 0 and a card resolves
 - **THEN** no sound plays on that device
+
+#### Scenario: Volume during play
+- **WHEN** a match is in progress
+- **THEN** the slider is shown and changing it changes the volume of the next sound
 
 ### Requirement: Event sounds
 With sound on, the client SHALL play: a send sound for a new challenge and a pass sound for a passed claim; a prompt sound once per claim for the person who must respond; on a non-cancelled resolution, a believe or disbelieve sound, then a reveal and a penalty-transfer sound for everyone; and a short click for enabled buttons. Sounds SHALL be normalised by peak level. Where variants exist, one is picked at random.
@@ -27,7 +31,7 @@ The final sender, the receiver and the penalty taker SHALL also hear an outcome 
 - **THEN** the loss sound plays
 
 ### Requirement: Countdown ticks
-During the lobby countdown, a tick SHALL play once per second, unless sound is off or reduced motion is on.
+During the lobby countdown, a tick SHALL play once per second, unless the sound volume is 0 or reduced motion is on.
 
 #### Scenario: Countdown with reduced motion
 - **WHEN** reduced motion is on during the countdown
