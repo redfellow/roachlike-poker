@@ -5,10 +5,10 @@ import { randomInt, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { applyAction, chooseComputerAction, chooseComputerPrediction, createMatch, DEFAULT_THEME, endMatch, GameError, lastClaim, projectMatch, recap, removeSeat, replacePerson, requireCondition, type Match, type Random, type Recap, type ThemeRef } from "@torakka/game";
-import { commandSchema, joinSchema, type Command, type OpenRoomView, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
+import { commandSchema, joinSchema, PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type Command, type PlayerIcon, type OpenRoomView, type Reply, type RoomView, type VoteView } from "@torakka/protocol";
 import { Store } from "./store";
 
-interface Member { id: string; name: string; token: string; computer: boolean }
+interface Member { id: string; name: string; token: string; computer: boolean; icon: PlayerIcon }
 interface Room {
 	id: string; revision: number; members: Member[]; seated: string[]; ready: string[]; hostId: string;
 	countdownAt: number | null; game: Match | null; history: Recap[]; vote: VoteView | null;
@@ -28,6 +28,16 @@ function createComputerName(room: Room, randomSource: Random): string {
 	const available = COMPUTER_NAMES.filter(name => !room.members.some(member => member.name === name));
 	if (available.length) { return available[Math.min(available.length - 1, Math.floor(randomSource() * available.length))]!; }
 	return `🤖 Kusetusbotti ${room.members.filter(member => member.computer).length + 1}`;
+}
+export function assignPlayerIcon(taken: readonly PlayerIcon[]): PlayerIcon {
+	const shapeUses = PLAYER_ICON_SHAPES.map((_shape, shape) => taken.filter(icon => icon.shape === shape).length);
+	const shape = shapeUses.indexOf(Math.min(...shapeUses));
+	const colourUses = PLAYER_ICON_COLOURS.map((_colour, colour) => taken.filter(icon => icon.shape === shape && icon.colour === colour).length);
+	const usedColours = new Set(taken.map(icon => icon.colour));
+	const fewest = Math.min(...colourUses);
+	const candidates = PLAYER_ICON_COLOURS.map((_colour, colour) => colour).filter(colour => colourUses[colour] === fewest);
+	const colour = candidates.find(candidate => !usedColours.has(candidate)) ?? candidates[0]!;
+	return { shape, colour };
 }
 function ensureComputerReadiness(room: Room): void {
 	if (room.game) { return; }
@@ -66,6 +76,10 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			if (!member.computer) { continue; }
 			if (/^Tietokone \d+$/.test(member.name)) { member.name = COMPUTER_NAMES[computerIndex] ?? `🤖 Kusetusbotti ${computerIndex + 1}`; }
 			computerIndex++;
+		}
+		const iconed: PlayerIcon[] = room.members.flatMap(member => member.icon ? [member.icon] : []);
+		for (const member of room.members) {
+			if (!member.icon) { member.icon = assignPlayerIcon(iconed); iconed.push(member.icon); }
 		}
 		room.lastActivityAt ??= now();
 		room.open ??= true;
@@ -112,7 +126,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 	}
 	function publicView(room: Room, me: string): RoomView {
 		return { id: room.id, revision: room.revision, me, hostId: room.hostId,
-			members: room.members.map(m => ({ id: m.id, name: m.name, online: memberOnline(room, m.id), seated: room.seated.includes(m.id), ready: room.ready.includes(m.id), computer: m.computer })),
+			members: room.members.map(m => ({ id: m.id, name: m.name, online: memberOnline(room, m.id), seated: room.seated.includes(m.id), ready: room.ready.includes(m.id), computer: m.computer, icon: m.icon })),
 			countdownAt: room.countdownAt, game: room.game ? projectMatch(room.game, me) : null, vote: room.vote,
 			waitingSeatId: room.waitingSeatId, promptAt: room.promptAt, closed: room.closed, open: room.open, theme: room.theme, notice: room.notice, history: room.history };
 	}
@@ -184,7 +198,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			requireCondition(actor === room.hostId && !game, "Vain isäntä voi lisätä tietokonepelaajan ennen peliä.");
 			requireCondition(room.seated.length < 6, "Kaikki paikat ovat jo täynnä.");
 			const name = createComputerName(room, randomSource);
-			const member: Member = { id: randomUUID(), name, token: randomUUID(), computer: true };
+			const member: Member = { id: randomUUID(), name, token: randomUUID(), computer: true, icon: assignPlayerIcon(room.members.map(m => m.icon)) };
 			room.members.push(member);
 			room.seated.push(member.id); room.ready.push(member.id);
 			room.countdownAt = null;
@@ -348,7 +362,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 						member = named; member.token = randomUUID(); replaced = true;
 					}
 					else {
-						member = { id: randomUUID(), name: data.name, token: randomUUID(), computer: false };
+						member = { id: randomUUID(), name: data.name, token: randomUUID(), computer: false, icon: assignPlayerIcon(room.members.map(m => m.icon)) };
 						room.members.push(member);
 						if (!room.game && room.seated.length < 6) { room.seated.push(member.id); room.countdownAt = null; }
 					}

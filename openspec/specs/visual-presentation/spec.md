@@ -13,11 +13,19 @@ The interface SHALL be in Finnish, with the response buttons `Uskon` and `En usk
 - **THEN** the buttons read `Uskon` and `En usko` and are usable immediately
 
 ### Requirement: Table layout
-The table SHALL show the person's own hand below the play area, the current claim in the centre and a compact panel for each seat. Each panel shows the name, avatar, hand count and the exposed cards grouped per creature with counts. A stack at threshold−1 SHALL be marked as dangerous. The seats in the current claim path SHALL be emphasised. The layout SHALL be playable in a portrait mobile viewport.
+The table SHALL show the person's own hand below the play area, the current claim in the centre and a compact panel for each seat. Each panel shows the name, avatar, hand count and the exposed cards grouped per creature with counts. A stack at threshold−1 SHALL be marked as dangerous. The seats in the current claim path SHALL be emphasised. When a card is handed to another seat, the handed card SHALL visibly travel from the sending seat's panel into the receiving seat's panel, and the receiving panel SHALL be highlighted on arrival. With reduced motion on, the card SHALL not travel and the receiving panel SHALL instead show a static highlight long enough to be seen. The layout SHALL be playable in a portrait mobile viewport.
 
 #### Scenario: Seat panel contents
 - **WHEN** a match is in progress
 - **THEN** each seat shows its hand count and per-creature exposed counts, and the seat that must act is marked active
+
+#### Scenario: Handoff destination on mobile
+- **WHEN** a card is passed to another seat in a portrait mobile viewport
+- **THEN** the card animates into the receiving seat's panel and that panel is highlighted
+
+#### Scenario: Handoff destination with reduced motion
+- **WHEN** reduced motion is on and a card is passed to another seat
+- **THEN** no card animates and the receiving seat's panel shows a static highlight for about a second
 
 ### Requirement: Private hand grouping
 A person's own hand SHALL be shown as one stack per creature with a count. A stack of two or more cards SHALL look like layered cards, with one visible layer per card up to four layers, and SHALL keep its `×N` count. Other people SHALL see only that person's total hand count. No grouping or selection details SHALL be sent to other clients.
@@ -75,3 +83,25 @@ The app SHALL ship Örkkipokka (default and fallback) and Herrasmiespokeri. Herr
 #### Scenario: Herrasmiespokeri labels
 - **WHEN** a match uses Herrasmiespokeri
 - **THEN** cards use its eight names and portraits, and avatars wear hats
+
+### Requirement: Discoverable match history
+When the room has at least one match recap, the topbar SHALL show a visible History button with the recap count. The button SHALL open the history view and SHALL NOT be nested in the overflow menu. When the room has no recaps, the button SHALL NOT be shown.
+
+#### Scenario: History after a finished match
+- **WHEN** a match in the room has ended
+- **THEN** a History button with count 1 is visible in the topbar without opening another menu
+
+#### Scenario: No history yet
+- **WHEN** no match in the room has ended
+- **THEN** no History button is shown
+
+### Requirement: Distinct, stable player icons
+Each room member SHALL receive a player icon (shape and colour) when first joining the room. No two current members of a room SHALL share the same icon while unused combinations remain, and players SHALL get different shapes before shapes repeat. A member's icon SHALL NOT change for the life of the room, including across new games, rematches and reconnects. Lobby, spectator and table views SHALL render the assigned icon.
+
+#### Scenario: Players at one table look different
+- **WHEN** six players join a room
+- **THEN** each has a different icon shape
+
+#### Scenario: Icon survives a new game
+- **WHEN** a match ends and a new game starts in the same room
+- **THEN** every player shows the same icon as before

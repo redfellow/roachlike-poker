@@ -1,0 +1,2 @@
+## Approach
+Delete the music code paths in `apps/web/src/main.tsx` (`BACKGROUND_MUSIC` constants, `musicPlayer`, `useBackgroundMusic`, `useMusicLevel`, `MusicVolume`, `BackgroundMusic`, the `musicLevel` props on `Session` and the call sites), the `musicLabel` string in `strings.fi.ts`, the `.music-volume` rules in `style.css` (including the media-query block), and the mp3 asset. A plain deletion; no setting replaces it.

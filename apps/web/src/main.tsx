@@ -1,8 +1,8 @@
-import { StrictMode, useEffect, useRef, useState, type ReactElement } from "react";
+import { StrictMode, useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
-import type { OpenRoomView, Reply, RoomAction, RoomView } from "@torakka/protocol";
+import { PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type OpenRoomView, type PlayerIcon, type PlayerIconShape, type Reply, type RoomAction, type RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
 import { playNormalizedAudio, selectNextAudio, selectRandomAudio } from "./audio";
 import { FI } from "./strings.fi";
@@ -27,61 +27,7 @@ const LOSS_VARIANTS = [
 const UI_CLICK_VARIANT = "/audio/ui-click-01.mp3";
 const COUNTDOWN_VARIANT = "/audio/countdown-01.mp3";
 const RESPONSE_PROMPT_VARIANT = "/audio/claim-intro-01.mp3";
-const BACKGROUND_MUSIC = "/audio/red_trax__bacon_fat.mp3";
-const MAX_BACKGROUND_MUSIC_VOLUME = 0.5;
-const DEFAULT_MUSIC_LEVEL = 25;
 const MAX_HAND_STACK_LAYERS = 4;
-
-let backgroundMusic: HTMLAudioElement | null = null;
-function musicPlayer(): HTMLAudioElement {
-	if (!backgroundMusic) {
-		backgroundMusic = new Audio(BACKGROUND_MUSIC);
-		backgroundMusic.loop = true;
-		backgroundMusic.preload = "auto";
-		backgroundMusic.volume = DEFAULT_MUSIC_LEVEL / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-	}
-	return backgroundMusic;
-}
-function useBackgroundMusic(active: boolean, level: number, fadeOut = false): void {
-	useEffect(function () {
-		const player = musicPlayer();
-		const targetVolume = Math.max(0, Math.min(100, level)) / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-		let frame = 0;
-		let finished = false;
-		function removeUnlockListeners(): void {
-			window.removeEventListener("pointerdown", tryPlay);
-			window.removeEventListener("keydown", tryPlay);
-		}
-		function tryPlay(): void {
-			if (!active || targetVolume === 0 || finished) { return; }
-			void player.play().then(removeUnlockListeners).catch(function () { return; });
-		}
-		removeUnlockListeners();
-		if (!active || targetVolume === 0) {
-			player.pause();
-			player.volume = targetVolume;
-			return;
-		}
-		player.volume = targetVolume;
-		tryPlay();
-		window.addEventListener("pointerdown", tryPlay);
-		window.addEventListener("keydown", tryPlay);
-		if (fadeOut) {
-			const startedAt = performance.now();
-			function fade(now: number): void {
-				const progress = Math.min(1, (now - startedAt) / 2000);
-				player.volume = targetVolume * (1 - progress);
-				if (progress < 1) { frame = requestAnimationFrame(fade); return; }
-				finished = true;
-				player.pause();
-				player.volume = targetVolume;
-				removeUnlockListeners();
-			}
-			frame = requestAnimationFrame(fade);
-		}
-		return function () { finished = true; cancelAnimationFrame(frame); removeUnlockListeners(); };
-	}, [active, fadeOut, level]);
-}
 
 function stored(key: string, fallback = ""): string { return localStorage.getItem(key) ?? fallback; }
 function navigate(path: string, replace = false): void {
@@ -111,42 +57,13 @@ function usePreference(key: string, fallback: boolean): [boolean, (value: boolea
 	function update(next: boolean): void { setValue(next); localStorage.setItem(key, String(next)); }
 	return [value, update];
 }
-function useMusicLevel(): [number, (value: number) => void] {
-	const [value, setValue] = useState(function () {
-		const saved = localStorage.getItem("torakka:music-volume");
-		if (saved !== null) {
-			const parsed = Number(saved);
-			if (Number.isFinite(parsed)) { return Math.max(0, Math.min(100, parsed)); }
-		}
-		return stored("torakka:music-muted", "false") === "true" ? 0 : DEFAULT_MUSIC_LEVEL;
-	});
-	function update(next: number): void {
-		const safe = Math.max(0, Math.min(100, next));
-		setValue(safe);
-		localStorage.setItem("torakka:music-volume", String(safe));
-		localStorage.removeItem("torakka:music-muted");
-	}
-	return [value, update];
-}
-function avatarColor(name: string): string {
+function fallbackIcon(name: string): PlayerIcon {
 	let hash = 0;
 	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
-	return `hsl(${Math.abs(hash) % 360} 27% 58%)`;
+	return { shape: Math.abs(hash) % PLAYER_ICON_SHAPES.length, colour: Math.abs(hash) % PLAYER_ICON_COLOURS.length };
 }
-function avatarVariant(name: string): "round" | "square" | "oval" | "diamond" | "hex" | "triangle" {
-	let hash = 0;
-	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
-	switch (Math.abs(hash) % 6) {
-		case 0: return "round";
-		case 1: return "square";
-		case 2: return "oval";
-		case 3: return "diamond";
-		case 4: return "hex";
-		default: return "triangle";
-	}
-}
-function Avatar({ name, gentleman = false }: { name: string; gentleman?: boolean }): ReactElement {
-	const variant = avatarVariant(name);
+function Avatar({ icon, gentleman = false }: { icon: PlayerIcon; gentleman?: boolean }): ReactElement {
+	const variant: PlayerIconShape = PLAYER_ICON_SHAPES[icon.shape] ?? PLAYER_ICON_SHAPES[0];
 	const smiles = {
 		round: "M5 6Q15 16 25 6",
 		square: "M4 7Q15 18 26 7",
@@ -155,7 +72,7 @@ function Avatar({ name, gentleman = false }: { name: string; gentleman?: boolean
 		hex: "M5 6Q15 13 25 6",
 		triangle: "M6 9Q15 19 24 9",
 	} as const;
-	return <span className={`avatar avatar--${variant}${gentleman ? " avatar--gentleman" : ""}`} style={{ backgroundColor: avatarColor(name) }} aria-hidden="true">
+	return <span className={`avatar avatar--${variant}${gentleman ? " avatar--gentleman" : ""}`} style={{ backgroundColor: PLAYER_ICON_COLOURS[icon.colour] ?? PLAYER_ICON_COLOURS[0] }} aria-hidden="true">
 		{gentleman && <span className="avatar__hat" />}
 		<span className="avatar__eyes"><span className="avatar__eye avatar__eye--left" /><span className="avatar__eye avatar__eye--right" /></span>
 		<span className="avatar__mouth"><svg viewBox="0 0 30 20" aria-hidden="true"><path d={smiles[variant]} /></svg></span>
@@ -169,9 +86,6 @@ function ResponseIcon({ kind }: { kind: "believe" | "disbelieve" | "forward" }):
 	</svg>;
 }
 function Logo({ theme = themeFor(undefined), showVersion = false }: { theme?: ThemeDefinition; showVersion?: boolean }): ReactElement { return <InternalLink className="logo" href="/" aria-label={theme.brand.label}><span className="logo__bug">✳</span> {theme.brand.first}<span className="logo__light">{theme.brand.second}</span>{showVersion && <small className="logo__version">v{__APP_VERSION__}</small>}</InternalLink>; }
-function MusicVolume({ level, setLevel }: { level: number; setLevel: (value: number) => void }): ReactElement {
-	return <label className="music-volume"><span>{FI.session.musicLabel}</span><input type="range" min="0" max="100" step="5" value={level} onChange={event => setLevel(Number(event.target.value))} aria-label={FI.session.musicLabel} /><output>{level}%</output></label>;
-}
 function Rules({ theme = themeFor(undefined) }: { theme?: ThemeDefinition }): ReactElement {
 	const steps = [theme.rulesFirst, FI.rules.steps[1], FI.rules.steps[2], theme.rulesLoss, FI.rules.steps[4]];
 	return <div className="rules"><h2>{FI.rules.title}</h2><ol>{steps.map(function (step, index) { return <li key={index}>{step}</li>; })}</ol><p>{theme.rulesVisibility}</p><p>{FI.rules.videoCall}</p></div>;
@@ -181,6 +95,23 @@ function ThemeSelector({ selected, host, locked, busy, select }: { selected: The
 		const active = theme.id === selected.id;
 		return <button type="button" className={`theme-option ${theme.className}${active ? " theme-option--selected" : ""}`} key={theme.id} disabled={!host || locked || busy} aria-pressed={active} onClick={() => select(theme.id)}><span className="theme-option__fan"><CreatureArt creature="torakka" themeId={theme.id} small /><CreatureArt creature="hamahakki" themeId={theme.id} small /></span><strong>{theme.name}</strong><small>{theme.id === "herrasmiespokeri" ? "Herrasmiehiä, promilleja ja klubin häpeää." : "Örkkejä, ötököitä ja huonoja ystäviä."}</small>{active && <b>{FI.lobby.themeSelected}</b>}</button>;
 	})}</div>{!host && <p className="fineprint">{FI.lobby.hostChoosesTheme}</p>}{locked && <p className="fineprint">{FI.lobby.themeLocked}</p>}</section>;
+}
+interface HandoffPath { fromX: number; fromY: number; toX: number; toY: number }
+function measureHandoff(table: HTMLElement | null, from: string, to: string): HandoffPath | null {
+	if (!table) { return null; }
+	const bounds = table.getBoundingClientRect();
+	const sender = table.querySelector<HTMLElement>(`[data-seat-id="${CSS.escape(from)}"]`)?.getBoundingClientRect();
+	const receiver = table.querySelector<HTMLElement>(`[data-seat-id="${CSS.escape(to)}"]`)?.getBoundingClientRect();
+	if (!sender || !receiver) { return null; }
+	return {
+		fromX: sender.left + sender.width / 2 - bounds.left,
+		fromY: sender.top + sender.height / 2 - bounds.top,
+		toX: receiver.left + receiver.width / 2 - bounds.left,
+		toY: receiver.top + receiver.height / 2 - bounds.top,
+	};
+}
+function handoffStyle(path: HandoffPath): CSSProperties {
+	return { "--handoff-from-x": `${path.fromX}px`, "--handoff-from-y": `${path.fromY}px`, "--handoff-to-x": `${path.toX - path.fromX}px`, "--handoff-to-y": `${path.toY - path.fromY}px` } as CSSProperties;
 }
 function randomCardFan(cards: readonly Creature[]): Creature[] {
 	const shuffled = [...cards];
@@ -226,7 +157,6 @@ function App(): ReactElement {
 	const [openRooms, setOpenRooms] = useState<OpenRoomView[]>([]);
 	const [resumeRoomId, setResumeRoomId] = useState("");
 	const [joinTheme, setJoinTheme] = useState<ThemeRef | undefined>();
-	const [musicLevel, setMusicLevel] = useMusicLevel();
 	const landingTheme = themeFor(joinTheme);
 	useEffect(function () {
 		setJoinedRoomId(roomId && stored("torakka:name") && stored(`torakka:token:${roomId}`) ? roomId : "");
@@ -277,17 +207,13 @@ function App(): ReactElement {
 		catch (err) { setError(err instanceof Error ? err.message : FI.error.connection); }
 		finally { setCreating(false); }
 	}
-	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} musicLevel={musicLevel} setMusicLevel={setMusicLevel} returnToJoin={() => setJoinedRoomId("")} />; }
-	return <div className={`landing ${landingTheme.className}`}><BackgroundMusic active level={musicLevel} /><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><MusicVolume level={musicLevel} setLevel={setMusicLevel} /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
+	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} returnToJoin={() => setJoinedRoomId("")} />; }
+	return <div className={`landing ${landingTheme.className}`}><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
 		<main className="landing__main"><div className="landing__copy"><p className="eyebrow">{FI.landing.eyebrow}</p><h1>{FI.landing.headingFirst}<br /><em>{FI.landing.headingEmphasis}</em><br />{FI.landing.headingLast}</h1><p className="lede">{landingTheme.landingLede}</p>
 			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoinedRoomId(roomId); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{resumeRoomId && <InternalLink className="button button--quiet" href={`/r/${resumeRoomId}`}>{FI.landing.resumeRoom}</InternalLink>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <InternalLink href={`/r/${room.id}`} className={`open-room ${themeFor(room.themeId).className}`} key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span><b>{themeFor(room.themeId).name}</b> · {FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></InternalLink>)}</div></section>}</>}
 			{error && <p role="alert" className="error">{error}</p>}
 		</div><div className="landing__art" aria-hidden="true"><div className="hero-card hero-card--back"><span>{landingTheme.cardBack}</span><CreatureArt creature="hamahakki" themeId={landingTheme.id} /></div><div className="hero-card"><span className="eyebrow">{FI.landing.frontCard}</span><CreatureArt creature="torakka" themeId={landingTheme.id} /><strong>{landingTheme.labels.torakka}</strong><span className="hero-card__serial">{landingTheme.cardSerial}</span></div><span className="stamp">{FI.landing.stampFirst}<br />{FI.landing.stampSecond}</span></div></main>
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules theme={landingTheme} /></Modal>}</div>;
-}
-function BackgroundMusic({ active, level, fadeOut = false }: { active: boolean; level: number; fadeOut?: boolean }): null {
-	useBackgroundMusic(active, level, fadeOut);
-	return null;
 }
 function Modal({ close, children }: { close: () => void; children: React.ReactNode }): ReactElement {
 	const dialog = useRef<HTMLElement | null>(null);
@@ -323,7 +249,7 @@ function useConfirmation(): [(question: string, accept: () => void) => void, Rea
 	const dialog = pending && <Modal close={cancel}><div className="confirmation"><p className="confirmation__question">{pending.question}</p><div className="confirmation__actions"><button type="button" className="button button--danger" onClick={confirmPending}>{FI.common.confirmYes}</button><button type="button" className="button button--quiet" onClick={cancel}>{FI.common.confirmCancel}</button></div></div></Modal>;
 	return [ask, dialog];
 }
-function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { roomId: string; name: string; musicLevel: number; setMusicLevel: (value: number) => void; returnToJoin: () => void }): ReactElement {
+function Session({ roomId, name, returnToJoin }: { roomId: string; name: string; returnToJoin: () => void }): ReactElement {
 	const socketRef = useRef<Socket | null>(null);
 	const [state, setState] = useState<RoomView | null>(null);
 	const [error, setError] = useState("");
@@ -341,9 +267,6 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const [copied, setCopied] = useState(false);
 	const [focusMode, setFocusMode] = usePreference("torakka:focus-mode", false);
 	const countdownSoundSecond = useRef<number | null>(null);
-	const musicActive = !state || !state.game || state.game.phase === "ended";
-	const musicFading = Boolean(state && !state.game && state.countdownAt !== null);
-	useBackgroundMusic(musicActive, musicLevel, musicFading);
 	useEffect(function () { if (state) { document.title = themeFor(state.theme).brand.documentTitle; } }, [state?.theme.id, state?.theme.version]);
 	useEffect(function () {
 		const timer = setInterval(() => setTime(Date.now()), 250); return function () { clearInterval(timer); };
@@ -405,14 +328,14 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const game = state.game;
 	const theme = themeFor(state.theme);
 	const gentleman = theme.id === "herrasmiespokeri";
-	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools">{(!game || game.phase === "ended") && <MusicVolume level={musicLevel} setLevel={setMusicLevel} />}<label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label>{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button><button className="button button--quiet" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.stopGame}</button>}</nav></header>
+	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools"><label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label>{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}{state.history.length > 0 && <button className="button button--quiet button--compact" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.stopGame}</button>}</nav></header>
 		<div className={game ? "game-stage" : "session-content"}>{focusMode && game && game.phase !== "ended" && <button className="button button--compact focus-restore" onClick={() => setFocusMode(false)}>{FI.session.exitFocusMode}</button>}
 			{!game && <div className="room-strip"><span><i className={`dot${connected ? "" : " dot--offline"}`} /> {connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="text-button">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></div>}
 			{error && <div role="alert" className="error error--banner">{error}<button aria-label={FI.common.close} onClick={() => setError("")}>✕</button></div>}
 			{!connected && <div className="error error--banner">{FI.session.connectionLost}</div>}
 			{state.vote && <div className="vote"><strong>{FI.session.requestSeat(state.members.find(m => m.id === state.vote!.requesterId)?.name ?? "")}</strong><span>{FI.session.approvals(state.vote.approvals.length, Math.floor(state.vote.voters.length / 2) + 1)}</span>{state.vote.voters.includes(state.me) && <><button className="button" disabled={busy} onClick={() => command({ kind: "vote", approve: true })}>{FI.session.approve}</button><button className="button button--quiet" disabled={busy} onClick={() => command({ kind: "vote", approve: false })}>{FI.session.reject}</button></>}</div>}
 			{state.waitingSeatId && <div className="vote"><strong>{FI.session.replacementNeeded}</strong><span>{FI.session.waitingReplacement}</span>{host && <button className="button" onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.endGame}</button>}</div>}
-			{!game ? <main className="lobby"><section><p className="eyebrow">{FI.lobby.eyebrow}</p><div className="lobby__heading"><h1>{FI.lobby.heading}</h1>{host && !state.closed && <button className="button button--danger lobby__close" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.closeConfirm, function () { void command({ kind: "close-lobby" }); }); }}>{FI.lobby.closeLobby}</button>}</div><p className="lede">{FI.lobby.lede}</p><div className="lobby__players">{state.members.filter(m => m.seated).map(m => <div className={`lobby-player${m.ready ? " lobby-player--ready" : ""}`} key={m.id}><Avatar name={m.name} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}{m.computer ? ` (${FI.lobby.computer})` : ""}</strong><small>{m.computer ? (m.ready ? FI.lobby.readyState : FI.lobby.notReadyState) : (!m.online ? FI.lobby.offline : m.ready ? FI.lobby.readyState : FI.lobby.notReadyState)}</small></span><span>{m.ready ? "✓" : "…"}</span>{host && m.id !== state.me && <button type="button" className="lobby-player__remove" aria-label={FI.lobby.removePlayer(m.name)} disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.removePlayerConfirm(m.name), function () { void command({ kind: "remove", seatId: m.id }); }); }}>✕</button>}</div>)}</div>
+			{!game ? <main className="lobby"><section><p className="eyebrow">{FI.lobby.eyebrow}</p><div className="lobby__heading"><h1>{FI.lobby.heading}</h1>{host && !state.closed && <button className="button button--danger lobby__close" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.closeConfirm, function () { void command({ kind: "close-lobby" }); }); }}>{FI.lobby.closeLobby}</button>}</div><p className="lede">{FI.lobby.lede}</p><div className="lobby__players">{state.members.filter(m => m.seated).map(m => <div className={`lobby-player${m.ready ? " lobby-player--ready" : ""}`} key={m.id}><Avatar icon={m.icon} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}{m.computer ? ` (${FI.lobby.computer})` : ""}</strong><small>{m.computer ? (m.ready ? FI.lobby.readyState : FI.lobby.notReadyState) : (!m.online ? FI.lobby.offline : m.ready ? FI.lobby.readyState : FI.lobby.notReadyState)}</small></span><span>{m.ready ? "✓" : "…"}</span>{host && m.id !== state.me && <button type="button" className="lobby-player__remove" aria-label={FI.lobby.removePlayer(m.name)} disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.removePlayerConfirm(m.name), function () { void command({ kind: "remove", seatId: m.id }); }); }}>✕</button>}</div>)}</div>
 				<div className="lobby__actions">
 					{me.seated ? <button className="button button--primary button--large" disabled={busy || !connected} onClick={() => command({ kind: "ready", ready: !me.ready })}>{me.ready ? FI.lobby.readyButton : FI.lobby.notReadyButton}</button> : <button className="button button--primary" disabled={state.members.filter(m => m.seated).length >= 6 || busy} onClick={() => command({ kind: "sit" })}>{FI.lobby.sit}</button>}
 					{me.seated && <button className="button button--quiet button--compact" onClick={() => command({ kind: "stand" })}>{FI.lobby.stand}</button>}
@@ -420,7 +343,7 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 				</div>
 				{!game && <button className="text-button text-button--danger" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.leaveConfirm, function () { void command({ kind: "leave-table" }); }); }}>{FI.lobby.leaveTable}</button>}
 				{state.countdownAt !== null && <div className="countdown" role="status"><strong>{Math.max(1, Math.ceil((state.countdownAt - time) / 1000))}</strong><span>{FI.lobby.countdown}</span></div>}
-				<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar name={m.name} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
+				<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar icon={m.icon} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
 			</section><aside className="lobby__aside"><ThemeSelector selected={theme} host={host} locked={state.countdownAt !== null} busy={busy || !connected} select={id => void command({ kind: "set-theme", themeId: id })} /><LobbyCardPreview theme={theme} /><h3>{FI.common.settings}</h3>{host && <label className="check"><input type="checkbox" checked={state.open} disabled={busy || !connected} onChange={event => void command({ kind: "set-open", open: event.target.checked })} /> {FI.lobby.openRoom}</label>}<label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{host ? FI.lobby.openRoomNote : FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}</div>
 		<footer className="app__footer"><span aria-live="polite">{state.notice}</span><span>{theme.name.toLocaleUpperCase("fi")}</span></footer>
 		{rules && <Modal close={() => setRules(false)}><Rules theme={theme} /><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label></Modal>}
@@ -443,7 +366,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const [answerFlash, setAnswerFlash] = useState(false);
 	const [selectedCard, setSelectedCard] = useState<Creature | null>(null);
 	const [selectedTarget, setSelectedTarget] = useState("");
-	const [handoff, setHandoff] = useState<{ from: string; to: string } | null>(null);
+	const [handoff, setHandoff] = useState<{ from: string; to: string; path: HandoffPath | null } | null>(null);
 	const [peeking, setPeeking] = useState(false);
 	const [nextTurnSeat, setNextTurnSeat] = useState<string | null>(game.phase === "initiation" ? game.activeSeatId : null);
 	const [askConfirmation, confirmationDialog] = useConfirmation();
@@ -468,12 +391,12 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const isNewHandoff = Boolean(latestClaim && (old.challengeId !== game.challenge?.id || old.claimCount < (game.challenge?.claims.length ?? 0)));
 		if (isNewHandoff && latestClaim) {
 			setNextTurnSeat(null);
-			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
+			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId, path: measureHandoff(tableRef.current, latestClaim.senderId, latestClaim.receiverId) });
 			if (!muted) {
 				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
 				void playNormalizedAudio(selectRandomAudio(variants), 0.48).catch(function () { return; });
 			}
-			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
+			const handoffTimer = setTimeout(() => setHandoff(null), 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(handoffTimer); };
 		}
@@ -600,6 +523,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const ownSeatIndex = me ? game.seats.findIndex(seat => seat.id === me.id) : -1;
 	const orderedSeats = ownSeatIndex >= 0 ? [...game.seats.slice(ownSeatIndex + 1), ...game.seats.slice(0, ownSeatIndex), game.seats[ownSeatIndex]!] : game.seats;
 	return <main ref={tableRef} className={`table${choosingTarget ? " table--choosing-target" : ""}${choosingResponse ? " table--choosing-response" : ""}`}><div className="table__heading"><div><p className="eyebrow">{FI.table.eyebrow}</p><h1>{game.phase === "ended" ? FI.table.endedHeading : FI.table.activeHeading}</h1></div><span className="table__limit">{theme.threshold(game.threshold)}</span></div>
+		{handoff?.path && <div className="handoff-card handoff-card--targeted" aria-hidden="true" style={handoffStyle(handoff.path)}><span>✳</span></div>}
 		{routePaths.length > 0 && <svg className="table-routes" aria-hidden="true"><defs><marker id="route-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="context-stroke" /></marker></defs>{routePaths.map(function (route, index) { const current = index === routePaths.length - 1; return <g key={index} className={`table-routes__segment table-routes__segment--${index % 4}${current ? " table-routes__segment--current" : ""}`}><path className="table-routes__path" d={route.d} markerEnd="url(#route-arrow)" /><circle cx={route.labelX} cy={route.labelY} r="10" /><text x={route.labelX} y={route.labelY + 3}>{index + 1}</text></g>; })}</svg>}
 		<div className={`seats${game.phase !== "ended" ? ` seats--around seats--${orderedSeats.length}` : ""}`}>{orderedSeats.map(function (seat) {
 			const member = state.members.find(m => m.id === seat.personId);
@@ -607,14 +531,14 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			const targetable = targetIds.has(seat.id);
 			return <article key={seat.id} data-seat-id={seat.id} className={`seat${required === seat.id && game.phase !== "ended" ? " seat--active" : ""}${!member?.online || seat.removed ? " seat--offline" : ""}${selectedTarget === seat.id ? " seat--selected" : ""}${targetable ? " seat--targetable" : ""}${routeSeatIds.has(seat.id) ? " seat--on-route" : ""}${claim?.senderId === seat.id ? " seat--claim-sender" : ""}${claim?.receiverId === seat.id ? " seat--claim-receiver" : ""}${handoff?.from === seat.id ? " seat--sending" : ""}${handoff?.to === seat.id ? " seat--receiving" : ""}${nextTurnSeat === seat.id ? " seat--next-turn" : ""}${result && resolution?.penaltySeatId === seat.id ? " seat--penalty" : ""}`}>
 				<button type="button" className="seat__target" disabled={!targetable || busy} aria-label={targetable ? FI.actions.choosePlayer(seat.name) : undefined} aria-pressed={selectedTarget === seat.id} onClick={() => setSelectedTarget(seat.id)}>
-					<div className="seat__identity"><Avatar name={seat.name} gentleman={theme.id === "herrasmiespokeri"} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong>{(seat.removed || !member?.online || required === seat.id && game.phase !== "ended") && <small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : FI.table.thinking}</small>}</span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
+					<div className="seat__identity"><Avatar icon={member?.icon ?? fallbackIcon(seat.name)} gentleman={theme.id === "herrasmiespokeri"} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong>{(seat.removed || !member?.online || required === seat.id && game.phase !== "ended") && <small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : FI.table.thinking}</small>}</span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
 					<div className="seat__display">{CREATURES.map(function (creature) { const count = seat.display.filter(c => c.creature === creature).length; return count ? <span title={theme.labels[creature]} data-creature={creature} className={`penalty${count >= game.threshold - 1 ? " penalty--danger" : ""}`} key={creature}><CreatureArt creature={creature} themeId={theme.id} small counter /><b>{count}</b></span> : null; })}{!seat.display.length && <span className="seat__clean">{theme.cleanTable}</span>}</div>
 				</button>
 				{!seat.removed && game.phase !== "ended" && <div className="seat__controls">{state.hostId === state.me && !member?.online && <button className="text-button" onClick={function () { askConfirmation(FI.table.confirmRemove, function () { void command({ kind: "remove", seatId: seat.id }); }); }}>{FI.table.removeAndDeal}</button>}{!me && (!member?.online || afk) && <button className="text-button" onClick={() => command({ kind: "request-seat", seatId: seat.id })}>{FI.table.requestSeat}</button>}</div>}
 			</article>;
 		})}</div>
 		{game.phase === "ended" ? <section className="end-panel"><p className="eyebrow">{game.loserSeatId ? FI.table.loser : FI.table.cancelled}</p><h2>{game.seats.find(s => s.id === game.loserSeatId)?.name ?? FI.table.noLoser}</h2><p>{game.endReason === "matching" ? theme.matchingLoss(game.threshold) : game.endReason === "empty" ? FI.table.emptyHandLoss : FI.session.gameEnded}</p>{state.hostId === state.me && <div className="end-panel__actions"><button className="button button--primary" onClick={() => command({ kind: "rematch" })}>{FI.table.rematch}</button><button className="button button--danger" onClick={function () { askConfirmation(FI.table.endPlayingConfirm, function () { void command({ kind: "close-lobby" }); }); }}>{FI.table.endPlaying}</button></div>}<History items={state.history.filter(h => h.id === game.id)} /></section> : <>
-			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}{nextTurnSeat && !result && <div className="turn-banner" role="status"><span>{nextTurnSeat === me?.id ? FI.table.yourTurn : FI.table.nextPlayer(game.seats.find(s => s.id === nextTurnSeat)?.name ?? "")}</span></div>}
+			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && !handoff.path && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}{nextTurnSeat && !result && <div className="turn-banner" role="status"><span>{nextTurnSeat === me?.id ? FI.table.yourTurn : FI.table.nextPlayer(game.seats.find(s => s.id === nextTurnSeat)?.name ?? "")}</span></div>}
 				{game.challenge ? <><div className="claim-presentation"><div data-creature={game.challenge.card?.creature} className={`playing-card${game.challenge.card ? " playing-card--known" : ""}`}>{game.challenge.card ? <><CreatureArt creature={game.challenge.card.creature} themeId={theme.id} /><strong>{theme.labels[game.challenge.card.creature]}</strong></> : <><span>✳</span><small>{theme.cardBack}</small></>}</div><span className="claim-presentation__arrow" aria-hidden="true">→</span><div data-creature={claim!.creature} className="claimed-card" aria-label={FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"), claimChanged)}><small>{FI.table.claimCard}</small><CreatureArt creature={claim!.creature} themeId={theme.id} small /><strong>{theme.labels[claim!.creature]}</strong></div></div><h2>{FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"), claimChanged)}</h2><p><strong>{claimReceiver}n</strong> {FI.table.claimRecipient}</p></> : <><div className="table-mark">✳</div><h2>{FI.table.startTurn(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</h2><p>{FI.table.startPrompt}</p></>}
 				{result && resolution && <div className="resolution" role="status"><div className={`decision-token${resolution.receiverBelieves ? " decision-token--believe" : " decision-token--disbelieve"}`}><span>{resolution.receiverBelieves ? "✓" : "✕"}</span>{decisionLabel}</div><div className="showdown"><div data-creature={resolution.claims.at(-1)!.creature} className="showdown__card showdown__card--claim"><small>VÄITE</small><CreatureArt creature={resolution.claims.at(-1)!.creature} themeId={theme.id} /><strong>{theme.labels[resolution.claims.at(-1)!.creature]}</strong></div><div data-creature={resolution.card.creature} className="showdown__card showdown__card--truth"><small>KORTTI</small><CreatureArt creature={resolution.card.creature} themeId={theme.id} /><strong>{theme.labels[resolution.card.creature]}</strong></div><span className={`showdown__stamp${resolution.claims.at(-1)!.creature === resolution.card.creature ? " showdown__stamp--true" : " showdown__stamp--false"}`}>{resolution.claims.at(-1)!.creature === resolution.card.creature ? "TOTTA" : "VALHE"}</span></div><p>{resolution.cancelled ? FI.table.cancelledRound : FI.table.takesCard(game.seats.find(s => s.id === resolution.penaltySeatId)?.name ?? "")}</p><span>{emoji} {outcome.length ? FI.round.correctAudienceGuesses(outcome.filter(Boolean).length, outcome.length) : ""}</span></div>}
 			</section>

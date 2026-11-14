@@ -245,30 +245,6 @@ small {
 	outline-offset: 3px;
 }
 
-.music-volume {
-	min-height: 40px;
-	padding: 6px 8px;
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	color: #bcbfb0;
-	font-size: 10px;
-	font-weight: 700;
-}
-
-.music-volume input {
-	width: 82px;
-	padding: 12px 0 !important;
-	accent-color: var(--lime);
-}
-
-.music-volume output {
-	min-width: 30px;
-	color: var(--muted);
-	font-size: 9px;
-	text-align: right;
-}
-
 .button {
 	display: inline-flex;
 	align-items: center;
@@ -1496,6 +1472,13 @@ select {
 	place-items: center;
 	pointer-events: none;
 	animation: table-handoff 1.5625s cubic-bezier(.2, .8, .25, 1) both;
+}
+
+.handoff-card--targeted {
+	left: calc(var(--handoff-from-x) - 31px);
+	top: calc(var(--handoff-from-y) - 43px);
+	z-index: 7 !important;
+	animation-name: table-handoff-targeted;
 }
 
 .handoff-card span {
@@ -3295,6 +3278,11 @@ summary {
 	display: none;
 }
 
+.app--reduced .seat--receiving {
+	filter: brightness(1.3);
+	box-shadow: 0 0 0 2px #c8d77e, 0 0 30px #c8d77e77;
+}
+
 .app--reduced .play-area--answer-correct::after,
 .app--reduced .play-area--answer-wrong::after {
 	opacity: 0;
@@ -3380,6 +3368,29 @@ summary {
 	}
 }
 
+@keyframes table-handoff-targeted {
+	0% {
+		opacity: 0;
+		transform: translate(0, 0) rotate(-12deg) scale(.6);
+	}
+
+	12% {
+		opacity: 1;
+		transform: translate(0, -10px) rotate(-6deg) scale(1);
+	}
+
+	55% {
+		opacity: 1;
+		transform: translate(var(--handoff-to-x), var(--handoff-to-y)) rotate(6deg) scale(.82);
+	}
+
+	75%,
+	100% {
+		opacity: 0;
+		transform: translate(var(--handoff-to-x), var(--handoff-to-y)) rotate(0deg) scale(.5);
+	}
+}
+
 @keyframes private-peek {
 
 	0%,
@@ -3438,14 +3449,14 @@ summary {
 @keyframes handoff-receiver {
 
 	0%,
-	48%,
+	50%,
 	100% {
 		filter: none;
 		scale: 1;
 	}
 
-	67%,
-	88% {
+	58%,
+	78% {
 		filter: brightness(1.3);
 		box-shadow: 0 0 30px #c8d77e77;
 		scale: 1.025;
@@ -3999,19 +4010,6 @@ summary {
 
 	.sound-toggle__label {
 		display: none;
-	}
-
-	.music-volume {
-		gap: 4px;
-		padding: 5px 4px;
-	}
-
-	.music-volume>span {
-		display: none;
-	}
-
-	.music-volume input {
-		width: 65px;
 	}
 
 	.landing__main {
