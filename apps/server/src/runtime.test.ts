@@ -285,7 +285,7 @@ describe("authoritative room transport", function () {
 		expect(restored.state!.game!.lastResolution!.id).toBe(`${game.id}:r1`);
 		expect(restored.state!.history).toHaveLength(restored.state!.game!.phase === "ended" ? 1 : 0);
 	});
-	it("marks seated computer players ready after a rematch", async function () {
+	it("Rematch starts the next match at once: rematch deals the same seats into a new match", async function () {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
 		const host = await connect(url, roomId, "A");
@@ -294,11 +294,17 @@ describe("authoritative room transport", function () {
 		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
 		await waitFor(() => Boolean(host.state!.game));
 		if (host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); }
+		const previous = host.state!.game!;
 		expect((await act(host, { kind: "rematch" })).ok).toBe(true);
+		const next = host.state!.game!;
+		expect(next).not.toBeNull();
+		expect(next.id).not.toBe(previous.id);
+		expect(next.phase).not.toBe("ended");
+		expect(next.seats.map(seat => seat.personId).sort()).toEqual(previous.seats.map(seat => seat.personId).sort());
 		const computers = host.state!.members.filter(member => member.computer);
 		expect(computers).toHaveLength(2);
-		expect(computers.every(member => member.ready)).toBe(true);
-		expect(host.state!.members.find(member => member.id === host.state!.me)!.ready).toBe(false);
+		expect(computers.every(member => next.seats.some(seat => seat.personId === member.id))).toBe(true);
+		expect(host.state!.history).toHaveLength(1);
 	});
 	it.each([2, 3, 6])("completes a solo %i-seat game with fair computer turns", async function (seatCount) {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 0 });
@@ -582,7 +588,8 @@ describe("departure and history integration", function () {
 		expect((await act(a, { kind: "remove", seatId })).ok).toBe(false);
 		expect(a.state!.waitingSeatId).toBeNull();
 		expect((await act(a, { kind: "rematch" })).ok).toBe(true);
-		expect(a.state!.game).toBeNull();
+		expect(a.state!.game).not.toBeNull();
+		expect(a.state!.game!.phase).not.toBe("ended");
 		expect(a.state!.history).toHaveLength(1);
 	});
 });

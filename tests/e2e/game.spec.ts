@@ -119,8 +119,9 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.getByText("Se oli siinä.", { exact: true })).toBeVisible();
 		await expect(pages[0]!.getByText("ILLAN EPÄONNISTUJA")).toBeVisible();
 		await expect(pages[0]!.locator(".history tbody tr")).toHaveCount(2);
-		await pages[0]!.getByRole("button", { name: "Uusi peli — sama kutsulinkki" }).click();
-		await expect(pages[1]!.getByText("Pöytä on katettu.")).toBeVisible();
+		await pages[0]!.getByRole("button", { name: "Uusi peli samalla porukalla" }).click();
+		await expect(pages[1]!.getByText("Kortit jaettu. Älä luota kehenkään.")).toBeVisible();
+		await expect(pages[1]!.locator(".hand-card").first()).toBeVisible();
 		await pages[0]!.locator(".topbar__more > summary").click();
 		await pages[0]!.getByRole("button", { name: /Historia/ }).click();
 		await expect(pages[0]!.locator(".modal .history tbody tr")).toHaveCount(2);

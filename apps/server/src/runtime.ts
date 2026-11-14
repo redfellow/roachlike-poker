@@ -155,6 +155,10 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}, computerDelayMs);
 		computerTimers.set(room.id, timer);
 	}
+	function startMatch(room: Room): void {
+		room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now(), room.theme);
+		room.promptAt = now(); room.ready = []; room.notice = "Kortit jaettu. Älä luota kehenkään.";
+	}
 	function mutate(room: Room, actor: string, command: Command): void {
 		const action = command.action;
 		const game = room.game;
@@ -229,9 +233,10 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}
 		else if (action.kind === "rematch") {
 			requireCondition(game, "Peli ei ole alkanut.");
-			requireCondition(actor === room.hostId && game.phase === "ended", "Vain isäntä voi avata uuden aulan pelin päätyttyä.");
-			room.game = null; room.ready = room.seated.filter(id => room.members.some(member => member.id === id && member.computer)); room.countdownAt = null; room.vote = null; room.waitingSeatId = null;
-			room.notice = "Uusi peli, samat huonot ystävät. Ilmoittaudu valmiiksi.";
+			requireCondition(actor === room.hostId && game.phase === "ended", "Vain isäntä voi aloittaa uuden pelin pelin päätyttyä.");
+			requireCondition(room.seated.length >= 2, "Uuteen peliin tarvitaan vähintään kaksi pelaajaa.");
+			room.countdownAt = null; room.vote = null; room.waitingSeatId = null;
+			startMatch(room);
 		}
 		else if (action.kind === "end") {
 			requireCondition(game, "Peli ei ole alkanut.");
@@ -409,8 +414,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				const room = structuredClone(original);
 				room.countdownAt = null;
 				if (room.seated.length >= 2 && room.seated.every(id => room.ready.includes(id) && memberOnline(room, id))) {
-					room.game = createMatch(randomUUID(), room.seated.map(id => room.members.find(m => m.id === id)!), randomSource, now(), room.theme);
-					room.promptAt = now(); room.ready = []; room.notice = "Kortit jaettu. Älä luota kehenkään.";
+					startMatch(room);
 				}
 				touch(room); save(room); broadcast(room); scheduleComputerTurn(room);
 			}
