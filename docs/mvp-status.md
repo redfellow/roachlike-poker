@@ -8,7 +8,7 @@ Status: the external-video-call gameplay MVP, including host-selected themes, is
 - Persistent Fastify/Socket.IO rooms backed by transactional SQLite state, revisions, command deduplication, reconnect recovery, replacement voting, and host-controlled removal.
 - Open-by-default rooms with memorable three-word invite codes and a host-controlled private option. Multiple rooms can run concurrently; active-game arrivals join as spectators.
 - Ready checks, automatic countdowns, same-link rematches, exact-name seat recovery, automatic host transfer, and computer players that are ready by default.
-- Finnish React UI with responsive table layouts, claim and reveal animations, sounds, reduced motion, focus mode, persistent menu music, and History API navigation.
+- Finnish React UI with responsive table layouts, claim and reveal animations, sounds, reduced motion, focus mode, and History API navigation.
 - Versioned themes that persist with rooms, matches, rematches, listings, invite pages, and recap history. Örkkipokka remains the fallback; Herrasmiespokeri supplies its own copy, artwork, achievements, and table styling.
 - Expanded match statistics and evidence-based achievements with boundary coverage.
 - Database backup tooling, health checks, persistent container volumes, and a generic reverse-proxy configuration example.
@@ -17,7 +17,7 @@ Status: the external-video-call gameplay MVP, including host-selected themes, is
 
 - `npm run check` covers TypeScript, ESLint, unit tests, integration tests, complete-game simulations, card conservation, privacy boundaries, room recovery, and achievement boundaries.
 - Fourteen Playwright scenarios cover computer games, human multiplayer, open rooms, countdowns, rematches, spectator privacy, reload recovery, defeat and recap, responsive seating, animations, keyboard-safe dialogs, tutorial persistence, and missing-room navigation.
-- Browser navigation tests verify that internal links preserve the active document and music playback.
+- Browser navigation tests verify that internal links preserve the active document.
 - Container checks verify built web assets, native SQLite, health reporting, backup creation, and data persistence across restart.
 
 ## Remaining Release Gates

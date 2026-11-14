@@ -33,13 +33,6 @@ During the lobby countdown, a tick SHALL play once per second, unless sound is o
 - **WHEN** reduced motion is on during the countdown
 - **THEN** no tick plays
 
-### Requirement: Background music
-Looping background music SHALL play on the landing page, in the lobby and after a match ends, but not during play. It SHALL fade out during the countdown. Its 0–100 volume slider (default 25, stored as `torakka:music-volume`) is separate from the sound switch. At 0 the music SHALL pause. Playback SHALL start after the first user interaction when the browser blocks autoplay.
-
-#### Scenario: Match starts
-- **WHEN** a match begins
-- **THEN** the background music stops
-
 ### Requirement: No browser calls to the generation service
 The browser app SHALL play only static audio files it ships. It SHALL never call the sound-generation API or hold its key.
 
