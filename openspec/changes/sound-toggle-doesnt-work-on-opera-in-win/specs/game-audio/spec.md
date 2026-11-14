@@ -17,9 +17,3 @@ During the lobby countdown, a tick SHALL play once per second, unless the sound 
 #### Scenario: Countdown with reduced motion
 - **WHEN** reduced motion is on during the countdown
 - **THEN** no tick plays
-
-## REMOVED Requirements
-
-### Requirement: Background music
-**Reason**: Music is removed by Reijo's direction; the slider now controls game sounds.
-**Migration**: Stored `torakka:music-volume` and `torakka:music-muted` are ignored and cleared.
