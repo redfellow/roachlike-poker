@@ -245,30 +245,6 @@ small {
 	outline-offset: 3px;
 }
 
-.music-volume {
-	min-height: 40px;
-	padding: 6px 8px;
-	display: inline-flex;
-	align-items: center;
-	gap: 7px;
-	color: #bcbfb0;
-	font-size: 10px;
-	font-weight: 700;
-}
-
-.music-volume input {
-	width: 82px;
-	padding: 12px 0 !important;
-	accent-color: var(--lime);
-}
-
-.music-volume output {
-	min-width: 30px;
-	color: var(--muted);
-	font-size: 9px;
-	text-align: right;
-}
-
 .button {
 	display: inline-flex;
 	align-items: center;
@@ -3938,19 +3914,6 @@ summary {
 
 	.sound-toggle__label {
 		display: none;
-	}
-
-	.music-volume {
-		gap: 4px;
-		padding: 5px 4px;
-	}
-
-	.music-volume>span {
-		display: none;
-	}
-
-	.music-volume input {
-		width: 65px;
 	}
 
 	.landing__main {

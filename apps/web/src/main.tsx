@@ -27,60 +27,6 @@ const LOSS_VARIANTS = [
 const UI_CLICK_VARIANT = "/audio/ui-click-01.mp3";
 const COUNTDOWN_VARIANT = "/audio/countdown-01.mp3";
 const RESPONSE_PROMPT_VARIANT = "/audio/claim-intro-01.mp3";
-const BACKGROUND_MUSIC = "/audio/red_trax__bacon_fat.mp3";
-const MAX_BACKGROUND_MUSIC_VOLUME = 0.5;
-const DEFAULT_MUSIC_LEVEL = 25;
-
-let backgroundMusic: HTMLAudioElement | null = null;
-function musicPlayer(): HTMLAudioElement {
-	if (!backgroundMusic) {
-		backgroundMusic = new Audio(BACKGROUND_MUSIC);
-		backgroundMusic.loop = true;
-		backgroundMusic.preload = "auto";
-		backgroundMusic.volume = DEFAULT_MUSIC_LEVEL / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-	}
-	return backgroundMusic;
-}
-function useBackgroundMusic(active: boolean, level: number, fadeOut = false): void {
-	useEffect(function () {
-		const player = musicPlayer();
-		const targetVolume = Math.max(0, Math.min(100, level)) / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-		let frame = 0;
-		let finished = false;
-		function removeUnlockListeners(): void {
-			window.removeEventListener("pointerdown", tryPlay);
-			window.removeEventListener("keydown", tryPlay);
-		}
-		function tryPlay(): void {
-			if (!active || targetVolume === 0 || finished) { return; }
-			void player.play().then(removeUnlockListeners).catch(function () { return; });
-		}
-		removeUnlockListeners();
-		if (!active || targetVolume === 0) {
-			player.pause();
-			player.volume = targetVolume;
-			return;
-		}
-		player.volume = targetVolume;
-		tryPlay();
-		window.addEventListener("pointerdown", tryPlay);
-		window.addEventListener("keydown", tryPlay);
-		if (fadeOut) {
-			const startedAt = performance.now();
-			function fade(now: number): void {
-				const progress = Math.min(1, (now - startedAt) / 2000);
-				player.volume = targetVolume * (1 - progress);
-				if (progress < 1) { frame = requestAnimationFrame(fade); return; }
-				finished = true;
-				player.pause();
-				player.volume = targetVolume;
-				removeUnlockListeners();
-			}
-			frame = requestAnimationFrame(fade);
-		}
-		return function () { finished = true; cancelAnimationFrame(frame); removeUnlockListeners(); };
-	}, [active, fadeOut, level]);
-}
 
 function stored(key: string, fallback = ""): string { return localStorage.getItem(key) ?? fallback; }
 function navigate(path: string, replace = false): void {
@@ -108,23 +54,6 @@ function InternalLink({ href, onClick, ...props }: React.AnchorHTMLAttributes<HT
 function usePreference(key: string, fallback: boolean): [boolean, (value: boolean) => void] {
 	const [value, setValue] = useState(stored(key, String(fallback)) === "true");
 	function update(next: boolean): void { setValue(next); localStorage.setItem(key, String(next)); }
-	return [value, update];
-}
-function useMusicLevel(): [number, (value: number) => void] {
-	const [value, setValue] = useState(function () {
-		const saved = localStorage.getItem("torakka:music-volume");
-		if (saved !== null) {
-			const parsed = Number(saved);
-			if (Number.isFinite(parsed)) { return Math.max(0, Math.min(100, parsed)); }
-		}
-		return stored("torakka:music-muted", "false") === "true" ? 0 : DEFAULT_MUSIC_LEVEL;
-	});
-	function update(next: number): void {
-		const safe = Math.max(0, Math.min(100, next));
-		setValue(safe);
-		localStorage.setItem("torakka:music-volume", String(safe));
-		localStorage.removeItem("torakka:music-muted");
-	}
 	return [value, update];
 }
 function avatarColor(name: string): string {
@@ -168,9 +97,6 @@ function ResponseIcon({ kind }: { kind: "believe" | "disbelieve" | "forward" }):
 	</svg>;
 }
 function Logo({ theme = themeFor(undefined), showVersion = false }: { theme?: ThemeDefinition; showVersion?: boolean }): ReactElement { return <InternalLink className="logo" href="/" aria-label={theme.brand.label}><span className="logo__bug">✳</span> {theme.brand.first}<span className="logo__light">{theme.brand.second}</span>{showVersion && <small className="logo__version">v{__APP_VERSION__}</small>}</InternalLink>; }
-function MusicVolume({ level, setLevel }: { level: number; setLevel: (value: number) => void }): ReactElement {
-	return <label className="music-volume"><span>{FI.session.musicLabel}</span><input type="range" min="0" max="100" step="5" value={level} onChange={event => setLevel(Number(event.target.value))} aria-label={FI.session.musicLabel} /><output>{level}%</output></label>;
-}
 function Rules({ theme = themeFor(undefined) }: { theme?: ThemeDefinition }): ReactElement {
 	const steps = [theme.rulesFirst, FI.rules.steps[1], FI.rules.steps[2], theme.rulesLoss, FI.rules.steps[4]];
 	return <div className="rules"><h2>{FI.rules.title}</h2><ol>{steps.map(function (step, index) { return <li key={index}>{step}</li>; })}</ol><p>{theme.rulesVisibility}</p><p>{FI.rules.videoCall}</p></div>;
@@ -225,7 +151,6 @@ function App(): ReactElement {
 	const [openRooms, setOpenRooms] = useState<OpenRoomView[]>([]);
 	const [resumeRoomId, setResumeRoomId] = useState("");
 	const [joinTheme, setJoinTheme] = useState<ThemeRef | undefined>();
-	const [musicLevel, setMusicLevel] = useMusicLevel();
 	const landingTheme = themeFor(joinTheme);
 	useEffect(function () {
 		setJoinedRoomId(roomId && stored("torakka:name") && stored(`torakka:token:${roomId}`) ? roomId : "");
@@ -276,17 +201,13 @@ function App(): ReactElement {
 		catch (err) { setError(err instanceof Error ? err.message : FI.error.connection); }
 		finally { setCreating(false); }
 	}
-	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} musicLevel={musicLevel} setMusicLevel={setMusicLevel} returnToJoin={() => setJoinedRoomId("")} />; }
-	return <div className={`landing ${landingTheme.className}`}><BackgroundMusic active level={musicLevel} /><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><MusicVolume level={musicLevel} setLevel={setMusicLevel} /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
+	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} returnToJoin={() => setJoinedRoomId("")} />; }
+	return <div className={`landing ${landingTheme.className}`}><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
 		<main className="landing__main"><div className="landing__copy"><p className="eyebrow">{FI.landing.eyebrow}</p><h1>{FI.landing.headingFirst}<br /><em>{FI.landing.headingEmphasis}</em><br />{FI.landing.headingLast}</h1><p className="lede">{landingTheme.landingLede}</p>
 			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoinedRoomId(roomId); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{resumeRoomId && <InternalLink className="button button--quiet" href={`/r/${resumeRoomId}`}>{FI.landing.resumeRoom}</InternalLink>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <InternalLink href={`/r/${room.id}`} className={`open-room ${themeFor(room.themeId).className}`} key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span><b>{themeFor(room.themeId).name}</b> · {FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></InternalLink>)}</div></section>}</>}
 			{error && <p role="alert" className="error">{error}</p>}
 		</div><div className="landing__art" aria-hidden="true"><div className="hero-card hero-card--back"><span>{landingTheme.cardBack}</span><CreatureArt creature="hamahakki" themeId={landingTheme.id} /></div><div className="hero-card"><span className="eyebrow">{FI.landing.frontCard}</span><CreatureArt creature="torakka" themeId={landingTheme.id} /><strong>{landingTheme.labels.torakka}</strong><span className="hero-card__serial">{landingTheme.cardSerial}</span></div><span className="stamp">{FI.landing.stampFirst}<br />{FI.landing.stampSecond}</span></div></main>
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules theme={landingTheme} /></Modal>}</div>;
-}
-function BackgroundMusic({ active, level, fadeOut = false }: { active: boolean; level: number; fadeOut?: boolean }): null {
-	useBackgroundMusic(active, level, fadeOut);
-	return null;
 }
 function Modal({ close, children }: { close: () => void; children: React.ReactNode }): ReactElement {
 	const dialog = useRef<HTMLElement | null>(null);
@@ -309,7 +230,7 @@ function Modal({ close, children }: { close: () => void; children: React.ReactNo
 	}, []);
 	return <div className="modal-backdrop" onClick={close}><section ref={dialog} className="modal" role="dialog" aria-modal="true" aria-label={FI.common.dialogLabel} onClick={e => e.stopPropagation()}><button className="button button--quiet modal__close" onClick={close} aria-label={FI.common.close}>✕</button>{children}</section></div>;
 }
-function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { roomId: string; name: string; musicLevel: number; setMusicLevel: (value: number) => void; returnToJoin: () => void }): ReactElement {
+function Session({ roomId, name, returnToJoin }: { roomId: string; name: string; returnToJoin: () => void }): ReactElement {
 	const socketRef = useRef<Socket | null>(null);
 	const [state, setState] = useState<RoomView | null>(null);
 	const [error, setError] = useState("");
@@ -326,9 +247,6 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const [copied, setCopied] = useState(false);
 	const [focusMode, setFocusMode] = usePreference("torakka:focus-mode", false);
 	const countdownSoundSecond = useRef<number | null>(null);
-	const musicActive = !state || !state.game || state.game.phase === "ended";
-	const musicFading = Boolean(state && !state.game && state.countdownAt !== null);
-	useBackgroundMusic(musicActive, musicLevel, musicFading);
 	useEffect(function () { if (state) { document.title = themeFor(state.theme).brand.documentTitle; } }, [state?.theme.id, state?.theme.version]);
 	useEffect(function () {
 		const timer = setInterval(() => setTime(Date.now()), 250); return function () { clearInterval(timer); };
@@ -390,7 +308,7 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const game = state.game;
 	const theme = themeFor(state.theme);
 	const gentleman = theme.id === "herrasmiespokeri";
-	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools">{(!game || game.phase === "ended") && <MusicVolume level={musicLevel} setLevel={setMusicLevel} />}<label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label>{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button><button className="button button--quiet" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { if (confirm(FI.session.confirmEnd)) { void command({ kind: "end" }); } }}>{FI.session.stopGame}</button>}</nav></header>
+	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools"><label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label>{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button><button className="button button--quiet" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { if (confirm(FI.session.confirmEnd)) { void command({ kind: "end" }); } }}>{FI.session.stopGame}</button>}</nav></header>
 		<div className={game ? "game-stage" : "session-content"}>{focusMode && game && game.phase !== "ended" && <button className="button button--compact focus-restore" onClick={() => setFocusMode(false)}>{FI.session.exitFocusMode}</button>}
 			{!game && <div className="room-strip"><span><i className={`dot${connected ? "" : " dot--offline"}`} /> {connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="text-button">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></div>}
 			{error && <div role="alert" className="error error--banner">{error}<button aria-label={FI.common.close} onClick={() => setError("")}>✕</button></div>}
