@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useRef, useState, type CSSProperties, type React
 import { createRoot } from "react-dom/client";
 import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
-import type { OpenRoomView, Reply, RoomAction, RoomView } from "@torakka/protocol";
+import { PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type OpenRoomView, type PlayerIcon, type PlayerIconShape, type Reply, type RoomAction, type RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
 import { playNormalizedAudio, selectNextAudio, selectRandomAudio } from "./audio";
 import { FI } from "./strings.fi";
@@ -57,25 +57,13 @@ function usePreference(key: string, fallback: boolean): [boolean, (value: boolea
 	function update(next: boolean): void { setValue(next); localStorage.setItem(key, String(next)); }
 	return [value, update];
 }
-function avatarColor(name: string): string {
+function fallbackIcon(name: string): PlayerIcon {
 	let hash = 0;
 	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
-	return `hsl(${Math.abs(hash) % 360} 27% 58%)`;
+	return { shape: Math.abs(hash) % PLAYER_ICON_SHAPES.length, colour: Math.abs(hash) % PLAYER_ICON_COLOURS.length };
 }
-function avatarVariant(name: string): "round" | "square" | "oval" | "diamond" | "hex" | "triangle" {
-	let hash = 0;
-	for (const char of name) { hash = (hash * 31 + char.charCodeAt(0)) | 0; }
-	switch (Math.abs(hash) % 6) {
-		case 0: return "round";
-		case 1: return "square";
-		case 2: return "oval";
-		case 3: return "diamond";
-		case 4: return "hex";
-		default: return "triangle";
-	}
-}
-function Avatar({ name, gentleman = false }: { name: string; gentleman?: boolean }): ReactElement {
-	const variant = avatarVariant(name);
+function Avatar({ icon, gentleman = false }: { icon: PlayerIcon; gentleman?: boolean }): ReactElement {
+	const variant: PlayerIconShape = PLAYER_ICON_SHAPES[icon.shape] ?? PLAYER_ICON_SHAPES[0];
 	const smiles = {
 		round: "M5 6Q15 16 25 6",
 		square: "M4 7Q15 18 26 7",
@@ -84,7 +72,7 @@ function Avatar({ name, gentleman = false }: { name: string; gentleman?: boolean
 		hex: "M5 6Q15 13 25 6",
 		triangle: "M6 9Q15 19 24 9",
 	} as const;
-	return <span className={`avatar avatar--${variant}${gentleman ? " avatar--gentleman" : ""}`} style={{ backgroundColor: avatarColor(name) }} aria-hidden="true">
+	return <span className={`avatar avatar--${variant}${gentleman ? " avatar--gentleman" : ""}`} style={{ backgroundColor: PLAYER_ICON_COLOURS[icon.colour] ?? PLAYER_ICON_COLOURS[0] }} aria-hidden="true">
 		{gentleman && <span className="avatar__hat" />}
 		<span className="avatar__eyes"><span className="avatar__eye avatar__eye--left" /><span className="avatar__eye avatar__eye--right" /></span>
 		<span className="avatar__mouth"><svg viewBox="0 0 30 20" aria-hidden="true"><path d={smiles[variant]} /></svg></span>
@@ -347,7 +335,7 @@ function Session({ roomId, name, returnToJoin }: { roomId: string; name: string;
 			{!connected && <div className="error error--banner">{FI.session.connectionLost}</div>}
 			{state.vote && <div className="vote"><strong>{FI.session.requestSeat(state.members.find(m => m.id === state.vote!.requesterId)?.name ?? "")}</strong><span>{FI.session.approvals(state.vote.approvals.length, Math.floor(state.vote.voters.length / 2) + 1)}</span>{state.vote.voters.includes(state.me) && <><button className="button" disabled={busy} onClick={() => command({ kind: "vote", approve: true })}>{FI.session.approve}</button><button className="button button--quiet" disabled={busy} onClick={() => command({ kind: "vote", approve: false })}>{FI.session.reject}</button></>}</div>}
 			{state.waitingSeatId && <div className="vote"><strong>{FI.session.replacementNeeded}</strong><span>{FI.session.waitingReplacement}</span>{host && <button className="button" onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.endGame}</button>}</div>}
-			{!game ? <main className="lobby"><section><p className="eyebrow">{FI.lobby.eyebrow}</p><div className="lobby__heading"><h1>{FI.lobby.heading}</h1>{host && !state.closed && <button className="button button--danger lobby__close" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.closeConfirm, function () { void command({ kind: "close-lobby" }); }); }}>{FI.lobby.closeLobby}</button>}</div><p className="lede">{FI.lobby.lede}</p><div className="lobby__players">{state.members.filter(m => m.seated).map(m => <div className={`lobby-player${m.ready ? " lobby-player--ready" : ""}`} key={m.id}><Avatar name={m.name} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}{m.computer ? ` (${FI.lobby.computer})` : ""}</strong><small>{m.computer ? (m.ready ? FI.lobby.readyState : FI.lobby.notReadyState) : (!m.online ? FI.lobby.offline : m.ready ? FI.lobby.readyState : FI.lobby.notReadyState)}</small></span><span>{m.ready ? "✓" : "…"}</span>{host && m.id !== state.me && <button type="button" className="lobby-player__remove" aria-label={FI.lobby.removePlayer(m.name)} disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.removePlayerConfirm(m.name), function () { void command({ kind: "remove", seatId: m.id }); }); }}>✕</button>}</div>)}</div>
+			{!game ? <main className="lobby"><section><p className="eyebrow">{FI.lobby.eyebrow}</p><div className="lobby__heading"><h1>{FI.lobby.heading}</h1>{host && !state.closed && <button className="button button--danger lobby__close" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.closeConfirm, function () { void command({ kind: "close-lobby" }); }); }}>{FI.lobby.closeLobby}</button>}</div><p className="lede">{FI.lobby.lede}</p><div className="lobby__players">{state.members.filter(m => m.seated).map(m => <div className={`lobby-player${m.ready ? " lobby-player--ready" : ""}`} key={m.id}><Avatar icon={m.icon} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}{m.computer ? ` (${FI.lobby.computer})` : ""}</strong><small>{m.computer ? (m.ready ? FI.lobby.readyState : FI.lobby.notReadyState) : (!m.online ? FI.lobby.offline : m.ready ? FI.lobby.readyState : FI.lobby.notReadyState)}</small></span><span>{m.ready ? "✓" : "…"}</span>{host && m.id !== state.me && <button type="button" className="lobby-player__remove" aria-label={FI.lobby.removePlayer(m.name)} disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.removePlayerConfirm(m.name), function () { void command({ kind: "remove", seatId: m.id }); }); }}>✕</button>}</div>)}</div>
 				<div className="lobby__actions">
 					{me.seated ? <button className="button button--primary button--large" disabled={busy || !connected} onClick={() => command({ kind: "ready", ready: !me.ready })}>{me.ready ? FI.lobby.readyButton : FI.lobby.notReadyButton}</button> : <button className="button button--primary" disabled={state.members.filter(m => m.seated).length >= 6 || busy} onClick={() => command({ kind: "sit" })}>{FI.lobby.sit}</button>}
 					{me.seated && <button className="button button--quiet button--compact" onClick={() => command({ kind: "stand" })}>{FI.lobby.stand}</button>}
@@ -355,7 +343,7 @@ function Session({ roomId, name, returnToJoin }: { roomId: string; name: string;
 				</div>
 				{!game && <button className="text-button text-button--danger" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.leaveConfirm, function () { void command({ kind: "leave-table" }); }); }}>{FI.lobby.leaveTable}</button>}
 				{state.countdownAt !== null && <div className="countdown" role="status"><strong>{Math.max(1, Math.ceil((state.countdownAt - time) / 1000))}</strong><span>{FI.lobby.countdown}</span></div>}
-				<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar name={m.name} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
+				<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar icon={m.icon} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
 			</section><aside className="lobby__aside"><ThemeSelector selected={theme} host={host} locked={state.countdownAt !== null} busy={busy || !connected} select={id => void command({ kind: "set-theme", themeId: id })} /><LobbyCardPreview theme={theme} /><h3>{FI.common.settings}</h3>{host && <label className="check"><input type="checkbox" checked={state.open} disabled={busy || !connected} onChange={event => void command({ kind: "set-open", open: event.target.checked })} /> {FI.lobby.openRoom}</label>}<label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{host ? FI.lobby.openRoomNote : FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}</div>
 		<footer className="app__footer"><span aria-live="polite">{state.notice}</span><span>{theme.name.toLocaleUpperCase("fi")}</span></footer>
 		{rules && <Modal close={() => setRules(false)}><Rules theme={theme} /><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label></Modal>}
@@ -543,7 +531,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			const targetable = targetIds.has(seat.id);
 			return <article key={seat.id} data-seat-id={seat.id} className={`seat${required === seat.id && game.phase !== "ended" ? " seat--active" : ""}${!member?.online || seat.removed ? " seat--offline" : ""}${selectedTarget === seat.id ? " seat--selected" : ""}${targetable ? " seat--targetable" : ""}${routeSeatIds.has(seat.id) ? " seat--on-route" : ""}${claim?.senderId === seat.id ? " seat--claim-sender" : ""}${claim?.receiverId === seat.id ? " seat--claim-receiver" : ""}${handoff?.from === seat.id ? " seat--sending" : ""}${handoff?.to === seat.id ? " seat--receiving" : ""}${nextTurnSeat === seat.id ? " seat--next-turn" : ""}${result && resolution?.penaltySeatId === seat.id ? " seat--penalty" : ""}`}>
 				<button type="button" className="seat__target" disabled={!targetable || busy} aria-label={targetable ? FI.actions.choosePlayer(seat.name) : undefined} aria-pressed={selectedTarget === seat.id} onClick={() => setSelectedTarget(seat.id)}>
-					<div className="seat__identity"><Avatar name={seat.name} gentleman={theme.id === "herrasmiespokeri"} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong>{(seat.removed || !member?.online || required === seat.id && game.phase !== "ended") && <small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : FI.table.thinking}</small>}</span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
+					<div className="seat__identity"><Avatar icon={member?.icon ?? fallbackIcon(seat.name)} gentleman={theme.id === "herrasmiespokeri"} /><span><strong>{seat.name}{seat.personId === state.me ? FI.table.self : ""}</strong>{(seat.removed || !member?.online || required === seat.id && game.phase !== "ended") && <small>{seat.removed ? FI.table.removed : !member?.online ? FI.session.connectionLost : FI.table.thinking}</small>}</span><span className="seat__count" aria-label={FI.table.handCount(seat.handCount)}>{seat.handCount}</span></div>
 					<div className="seat__display">{CREATURES.map(function (creature) { const count = seat.display.filter(c => c.creature === creature).length; return count ? <span title={theme.labels[creature]} data-creature={creature} className={`penalty${count >= game.threshold - 1 ? " penalty--danger" : ""}`} key={creature}><CreatureArt creature={creature} themeId={theme.id} small counter /><b>{count}</b></span> : null; })}{!seat.display.length && <span className="seat__clean">{theme.cleanTable}</span>}</div>
 				</button>
 				{!seat.removed && game.phase !== "ended" && <div className="seat__controls">{state.hostId === state.me && !member?.online && <button className="text-button" onClick={function () { askConfirmation(FI.table.confirmRemove, function () { void command({ kind: "remove", seatId: seat.id }); }); }}>{FI.table.removeAndDeal}</button>}{!me && (!member?.online || afk) && <button className="text-button" onClick={() => command({ kind: "request-seat", seatId: seat.id })}>{FI.table.requestSeat}</button>}</div>}
