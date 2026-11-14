@@ -5,3 +5,12 @@ x-harvaaja-card: ebb32b24-895e-4017-9db9-e36caf8a167c
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: "New observable contract: per-room distinct, stable player icons; no
+    existing spec or active change covers avatars."
+  citations:
+    - apps/web/src/main.tsx:130-161 Avatar derived from name hash
+    - packages/protocol/src/index.ts:34 MemberView
+    - openspec/specs/visual-presentation/spec.md
+  revision: 6242e448-9d2f-451f-ab5f-5df8f34b9dec
