@@ -20,3 +20,6 @@ Reijo: most players' icons look the same, and on every new game they all look di
 - Colours come from a fixed palette of clearly different hues instead of the continuous hash hue. Ruled out: keeping hash hues.
 - Shapes are filled first (each new member gets an unused shape, then an unused colour) so the first six players differ by shape. Ruled out: random picks.
 - The Herrasmiespokeri hat stays theme-driven.
+
+## Discrepancies
+- `docs/project-plan.md` (Goals, "No accounts required" bullet) says the same name generates the same avatar. This change replaces that with room-assigned icons; the bullet is not retired here and needs a follow-up once this requirement is reviewed.

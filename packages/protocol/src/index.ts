@@ -31,7 +31,11 @@ export const commandSchema = z.object({
 });
 export type Command = z.infer<typeof commandSchema>;
 export type RoomAction = Command["action"];
-export interface MemberView { id: string; name: string; online: boolean; seated: boolean; ready: boolean; computer: boolean }
+export const PLAYER_ICON_SHAPES = ["round", "square", "oval", "diamond", "hex", "triangle"] as const;
+export const PLAYER_ICON_COLOURS = ["hsl(4 45% 60%)", "hsl(38 55% 56%)", "hsl(88 35% 52%)", "hsl(168 35% 50%)", "hsl(208 45% 60%)", "hsl(262 35% 64%)", "hsl(318 35% 62%)", "hsl(25 20% 48%)"] as const;
+export type PlayerIconShape = typeof PLAYER_ICON_SHAPES[number];
+export interface PlayerIcon { shape: number; colour: number }
+export interface MemberView { id: string; name: string; online: boolean; seated: boolean; ready: boolean; computer: boolean; icon: PlayerIcon }
 export interface VoteView { seatId: string; requesterId: string; voters: string[]; approvals: string[]; rejected: string[] }
 export interface RoomView {
 	id: string; revision: number; me: string; hostId: string; members: MemberView[]; countdownAt: number | null;
