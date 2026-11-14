@@ -310,7 +310,10 @@ describe("authoritative room transport", function () {
 		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
 		await waitFor(() => Boolean(host.state!.game));
 		if (host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); }
+		const firstGameId = host.state!.game!.id;
 		expect((await act(host, { kind: "rematch" })).ok).toBe(true);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game) && host.state!.game!.id !== firstGameId);
 		expect(new Map(host.state!.members.map(member => [member.id, member.icon]))).toEqual(icons);
 		host.socket.disconnect();
 		const returned = await connect(url, roomId, "A", host.token);

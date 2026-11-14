@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useRef, useState, type ReactElement } from "reac
 import { createRoot } from "react-dom/client";
 import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
-import { PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type OpenRoomView, type PlayerIcon, type Reply, type RoomAction, type RoomView } from "@torakka/protocol";
+import { PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type OpenRoomView, type PlayerIcon, type PlayerIconShape, type Reply, type RoomAction, type RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
 import { playNormalizedAudio, selectNextAudio, selectRandomAudio } from "./audio";
 import { FI } from "./strings.fi";
@@ -133,7 +133,7 @@ function fallbackIcon(name: string): PlayerIcon {
 	return { shape: Math.abs(hash) % PLAYER_ICON_SHAPES.length, colour: Math.abs(hash) % PLAYER_ICON_COLOURS.length };
 }
 function Avatar({ icon, gentleman = false }: { icon: PlayerIcon; gentleman?: boolean }): ReactElement {
-	const variant = PLAYER_ICON_SHAPES[icon.shape] ?? PLAYER_ICON_SHAPES[0];
+	const variant: PlayerIconShape = PLAYER_ICON_SHAPES[icon.shape] ?? PLAYER_ICON_SHAPES[0];
 	const smiles = {
 		round: "M5 6Q15 16 25 6",
 		square: "M4 7Q15 18 26 7",
