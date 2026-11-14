@@ -3302,6 +3302,11 @@ summary {
 	display: none;
 }
 
+.app--reduced .seat--receiving {
+	filter: brightness(1.3);
+	box-shadow: 0 0 0 2px #c8d77e, 0 0 30px #c8d77e77;
+}
+
 .app--reduced .play-area--answer-correct::after,
 .app--reduced .play-area--answer-wrong::after {
 	opacity: 0;

@@ -490,7 +490,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
 				void playNormalizedAudio(selectRandomAudio(variants), 0.48).catch(function () { return; });
 			}
-			const handoffTimer = setTimeout(() => setHandoff(null), reduced ? 40 : 1250);
+			const handoffTimer = setTimeout(() => setHandoff(null), 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
 			return function () { clearTimeout(handoffTimer); };
 		}

@@ -4,7 +4,7 @@ Reijo: "its not apparent where cards are going to in mobile". When a card is han
 ## What Changes
 - The handoff card animation starts at the sending seat panel and ends inside the receiving seat panel, using their measured on-screen positions, on every viewport including portrait mobile.
 - The receiving seat panel highlights as the card lands (existing `seat--receiving` timed to arrival).
-- Reduced motion keeps the near-zero handoff; the receiver highlight still marks the destination.
+- Reduced motion hides the flying card, and the receiving panel gets a static highlight for the normal handoff duration instead of the animated glow, so the destination stays marked without motion.
 - **MODIFIED** `visual-presentation` requirement "Table layout" gains a handoff-destination scenario.
 
 ## Outcome
