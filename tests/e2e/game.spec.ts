@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type APIRequestContext, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 test("first-turn response guidance can be dismissed above the highlighted controls", async function ({ browser, request }) {
 	const create = await request.post("/api/rooms");
@@ -169,30 +169,35 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 	finally { for (const context of contexts) { await context.close(); } }
 });
 
-test("Handoff destination on mobile: the card flies from the sender's panel into the highlighted receiver's panel", async function ({ browser, request }) {
+async function passCardOnMobile(browser: Browser, request: APIRequestContext, reducedMotion: "reduce" | "no-preference"): Promise<{ actor: Page; contexts: BrowserContext[] }> {
 	const create = await request.post("/api/rooms");
 	expect(create.ok()).toBe(true);
 	const { id } = await create.json() as { id: string };
-	const contexts = await Promise.all([0, 1].map(() => browser.newContext({ viewport: { width: 390, height: 844 } })));
+	const contexts = await Promise.all([0, 1].map(() => browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion })));
 	const pages = await Promise.all(contexts.map(context => context.newPage()));
+	for (let index = 0; index < pages.length; index++) {
+		const page = pages[index]!;
+		await page.goto(`/r/${id}`);
+		await page.getByLabel("Millä nimellä sinua kirotaan?").fill(`Kantaja ${index + 1}`);
+		await page.getByRole("button", { name: "Liity pöytään" }).click();
+		await page.getByLabel("Opasta ensimmäisellä vuorollani").uncheck();
+	}
+	for (const page of pages) { await page.getByRole("button", { name: "Olen valmis" }).click(); }
+	await expect.poll(async function () {
+		const counts = await Promise.all(pages.map(page => page.locator(".hand-card:not(:disabled)").count()));
+		return counts.some(count => count > 0);
+	}).toBe(true);
+	const actor = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
+	await actor.locator(".hand-card:not(:disabled)").first().click();
+	await actor.locator(".seat--targetable .seat__target").click();
+	await actor.locator(".claim-card").first().click();
+	await actor.locator(".claim-card").first().click();
+	return { actor, contexts };
+}
+
+test("Handoff destination on mobile: the card flies from the sender's panel into the highlighted receiver's panel", async function ({ browser, request }) {
+	const { actor, contexts } = await passCardOnMobile(browser, request, "no-preference");
 	try {
-		for (let index = 0; index < pages.length; index++) {
-			const page = pages[index]!;
-			await page.goto(`/r/${id}`);
-			await page.getByLabel("Millä nimellä sinua kirotaan?").fill(`Kantaja ${index + 1}`);
-			await page.getByRole("button", { name: "Liity pöytään" }).click();
-			await page.getByLabel("Opasta ensimmäisellä vuorollani").uncheck();
-		}
-		for (const page of pages) { await page.getByRole("button", { name: "Olen valmis" }).click(); }
-		await expect.poll(async function () {
-			const counts = await Promise.all(pages.map(page => page.locator(".hand-card:not(:disabled)").count()));
-			return counts.some(count => count > 0);
-		}).toBe(true);
-		const actor = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
-		await actor.locator(".hand-card:not(:disabled)").first().click();
-		await actor.locator(".seat--targetable .seat__target").click();
-		await actor.locator(".claim-card").first().click();
-		await actor.locator(".claim-card").first().click();
 		const flight = await actor.waitForFunction(function () {
 			const card = document.querySelector<HTMLElement>(".handoff-card--targeted");
 			const table = document.querySelector<HTMLElement>(".table");
@@ -212,6 +217,18 @@ test("Handoff destination on mobile: the card flies from the sender's panel into
 			return { distinct: sender !== receiver, startsInSender: contains(sender, fromX, fromY), endsInReceiver: contains(receiver, toX, toY) };
 		}, undefined, { timeout: 5000 });
 		expect(await flight.jsonValue()).toEqual({ distinct: true, startsInSender: true, endsInReceiver: true });
+	}
+	finally { for (const context of contexts) { await context.close(); } }
+});
+
+test("Handoff destination with reduced motion: no card flies and the receiver's panel stays marked", async function ({ browser, request }) {
+	const { actor, contexts } = await passCardOnMobile(browser, request, "reduce");
+	try {
+		const receiver = actor.locator("[data-seat-id].seat--receiving");
+		await expect(receiver).toHaveCount(1);
+		await expect(actor.locator(".handoff-card")).toBeHidden();
+		await actor.waitForTimeout(400);
+		await expect(receiver).toHaveCount(1);
 	}
 	finally { for (const context of contexts) { await context.close(); } }
 });
