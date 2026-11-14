@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { createRuntime, type Runtime } from "./runtime";
+import { Store } from "./store";
 import type { Reply, RoomAction, RoomView } from "@torakka/protocol";
 
 interface Client { socket: Socket; state: RoomView | null; token: string; receipts: Set<string> }
@@ -305,6 +306,30 @@ describe("authoritative room transport", function () {
 		expect(computers).toHaveLength(2);
 		expect(computers.every(member => next.seats.some(seat => seat.personId === member.id))).toBe(true);
 		expect(host.state!.history).toHaveLength(1);
+	});
+	it("Rematch: rejects a rematch when fewer than two people are seated", async function () {
+		const dir = mkdtempSync(join(tmpdir(), "torakka-rematch-")); paths.push(dir);
+		const path = join(dir, "game.sqlite");
+		const first = await start(path, { countdownMs: 0, computerDelayMs: 5000 });
+		const roomId = (await first.runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(first.url, roomId, "A");
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		expect((await act(host, { kind: "end" })).ok).toBe(true);
+		const ended = host.state!.game!;
+		const token = host.token;
+		host.socket.disconnect();
+		await first.runtime.close(); runtimes.splice(runtimes.indexOf(first.runtime), 1);
+		const store = new Store(path);
+		const saved = JSON.parse(store.all()[0]!) as { id: string; seated: string[] };
+		saved.seated = saved.seated.filter(id => id === host.state!.me);
+		store.save(saved.id, JSON.stringify(saved)); store.close();
+		const second = await start(path, { countdownMs: 0, computerDelayMs: 5000 });
+		const restored = await connect(second.url, roomId, "A", token);
+		expect((await act(restored, { kind: "rematch" })).ok).toBe(false);
+		expect(restored.state!.game!.id).toBe(ended.id);
+		expect(restored.state!.game!.phase).toBe("ended");
 	});
 	it.each([2, 3, 6])("completes a solo %i-seat game with fair computer turns", async function (seatCount) {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 0 });
