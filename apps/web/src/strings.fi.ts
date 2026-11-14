@@ -5,6 +5,8 @@ export const FI = {
 		settings: "Oma mukavuusalue",
 		reducedMotion: "Vähennä animaatioita",
 		dialogLabel: "Lisätiedot",
+		confirmYes: "Kyllä",
+		confirmCancel: "Peruuta",
 	},
 	brand: {
 		logoLabel: "Örkkipokka etusivu",
