@@ -1,8 +1,8 @@
 ## 1. Topbar history button
 
-- [ ] 1.1 Move the History button from the "Lisää" menu into the topbar tools, rendered only when `state.history.length > 0`
+- [x] 1.1 Move the History button from the "Lisää" menu into the topbar tools, rendered only when `state.history.length > 0`
   - proof: `npx eslint apps/web/src/main.tsx`
-- [ ] 1.2 Update the e2e history step to click the topbar button without opening "Lisää", and assert no History button before the first match ends (scenarios: History after a finished match, No history yet)
+- [x] 1.2 Update the e2e history step to click the topbar button without opening "Lisää", and assert no History button before the first match ends (scenarios: History after a finished match, No history yet)
   Tests to update: tests/e2e/game.spec.ts
   - proof: `npx eslint tests/e2e/game.spec.ts`
   - proof: `npx tsc --noEmit -p tsconfig.json`

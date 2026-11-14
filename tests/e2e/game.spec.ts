@@ -61,6 +61,8 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		for (let i = 0; i < 2; i++) { await pages[i]!.getByRole("button", { name: "Olen valmis" }).click(); }
 		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
 		await expect(pages[1]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible();
+		// No history yet: no History button before the first match ends.
+		await expect(pages[0]!.locator(".topbar").getByRole("button", { name: /Historia/ })).toHaveCount(0);
 		await pages[2]!.goto(`/r/${id}`);
 		await pages[2]!.getByLabel("Millä nimellä sinua kirotaan?").fill("Katsoja");
 		await pages[2]!.getByRole("button", { name: "Liity pöytään" }).click();
@@ -121,8 +123,10 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.locator(".history tbody tr")).toHaveCount(2);
 		await pages[0]!.getByRole("button", { name: "Uusi peli — sama kutsulinkki" }).click();
 		await expect(pages[1]!.getByText("Pöytä on katettu.")).toBeVisible();
-		await pages[0]!.locator(".topbar__more > summary").click();
-		await pages[0]!.getByRole("button", { name: /Historia/ }).click();
+		// History after a finished match: the topbar button shows count 1 without opening another menu.
+		const historyButton = pages[0]!.locator(".topbar").getByRole("button", { name: /Historia\s*1/ });
+		await expect(historyButton).toBeVisible();
+		await historyButton.click();
 		await expect(pages[0]!.locator(".modal .history tbody tr")).toHaveCount(2);
 		await expect(pages[0]!.locator(".modal .history")).toContainText("hävisi.");
 
