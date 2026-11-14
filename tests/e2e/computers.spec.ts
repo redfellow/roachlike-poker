@@ -42,14 +42,14 @@ async function playToEnd(page: Page): Promise<void> {
 }
 
 async function closeSoloTable(page: Page): Promise<void> {
-	page.on("dialog", function (dialog) { void dialog.accept(); });
+	const accept = page.getByRole("dialog").getByRole("button", { name: "Kyllä" });
 	for (let attempt = 0; attempt < 20; attempt++) {
 		const endPlaying = page.getByRole("button", { name: "Lopeta pelaaminen" });
-		if (await endPlaying.isVisible()) { await endPlaying.click(); return; }
+		if (await endPlaying.isVisible()) { await endPlaying.click(); await accept.click(); return; }
 		const stop = page.getByRole("button", { name: "Keskeytä peli" });
-		if (await stop.isVisible()) { await stop.click().catch(function () { return; }); await page.waitForTimeout(100); continue; }
+		if (await stop.isVisible()) { await stop.click().catch(function () { return; }); await accept.click().catch(function () { return; }); await page.waitForTimeout(100); continue; }
 		const close = page.getByRole("button", { name: "Poista aula" });
-		if (await close.isVisible()) { await close.click(); return; }
+		if (await close.isVisible()) { await close.click(); await accept.click(); return; }
 		await page.waitForTimeout(100);
 	}
 	throw new Error("Could not close the solo test room.");

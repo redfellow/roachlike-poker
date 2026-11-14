@@ -42,6 +42,39 @@ test("first-turn response guidance can be dismissed above the highlighted contro
 	finally { for (const context of contexts) { await context.close(); } }
 });
 
+test("a seated player leaves the lobby through the in-app confirmation", async function ({ browser, request }) {
+	const create = await request.post("/api/rooms");
+	expect(create.ok()).toBe(true);
+	const { id } = await create.json() as { id: string };
+	const contexts = await Promise.all([browser.newContext(), browser.newContext({ viewport: { width: 390, height: 844 } })]);
+	const pages = await Promise.all(contexts.map(context => context.newPage()));
+	try {
+		for (let index = 0; index < pages.length; index++) {
+			const page = pages[index]!;
+			await page.goto(`/r/${id}`);
+			await page.getByLabel("Millä nimellä sinua kirotaan?").fill(`Lähtijä ${index + 1}`);
+			await page.getByRole("button", { name: "Liity pöytään" }).click();
+			await expect(page.getByText("Pöytä on katettu.")).toBeVisible();
+		}
+		const [host, guest] = pages as [typeof pages[0], typeof pages[0]];
+		const hostPlayers = host.locator(".lobby-player");
+		await expect(hostPlayers).toHaveCount(2);
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		const dialog = guest.getByRole("dialog");
+		await expect(dialog).toBeVisible();
+		await dialog.getByRole("button", { name: "Peruuta" }).click();
+		await expect(dialog).toBeHidden();
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		await guest.keyboard.press("Escape");
+		await expect(dialog).toBeHidden();
+		await expect(hostPlayers).toHaveCount(2);
+		await guest.getByRole("button", { name: "Poistu pöydästä" }).click();
+		await dialog.getByRole("button", { name: "Kyllä" }).click();
+		await expect(hostPlayers).toHaveCount(1);
+	}
+	finally { for (const context of contexts) { await context.close(); } }
+});
+
 test("private room, full game, recap, rematch, hidden hands and reload", async function ({ browser, request }) {
 	test.setTimeout(180000);
 	const create = await request.post("/api/rooms");
@@ -66,6 +99,12 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await pages[2]!.getByRole("button", { name: "Liity pöytään" }).click();
 		await expect(pages[2]!.getByText("KATSOMOSSA · VAIN JULKINEN TIETO")).toBeVisible();
 		await expect(pages[2]!.locator(".hand-card")).toHaveCount(0);
+		// Duplicate cards appear stacked: each copy adds a layer behind the front card, up to four layers in total.
+		for (const page of pages.slice(0, 2)) {
+			const stacks = await page.locator(".hand-card").evaluateAll(cards => cards.map(card => ({ count: Number(card.querySelector(".hand-card__count")?.textContent?.replace("×", "")), layers: card.querySelectorAll(".hand-card__layer").length })));
+			expect(stacks.length).toBeGreaterThan(0);
+			for (const stack of stacks) { expect(stack.layers).toBe(Math.min(stack.count, 4) - 1); }
+		}
 		const actor = await pages[0]!.locator(".hand-card:not(:disabled)").count() ? pages[0]! : pages[1]!;
 		const receiver = actor === pages[0] ? pages[1]! : pages[0]!;
 		if (actor === pages[0]) {

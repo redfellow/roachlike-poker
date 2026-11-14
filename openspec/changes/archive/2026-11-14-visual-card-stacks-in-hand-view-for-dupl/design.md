@@ -1,0 +1,2 @@
+## Approach
+In `apps/web/src/main.tsx` (hand-area render), set `data-stack={Math.min(count, 4)}` on the `.hand-card` button and render `min(count,4)-1` empty `aria-hidden` spans `hand-card__layer` behind the content. In `style.css`, position each layer absolutely and offset it a few px down and right with the card's background and border, on z-index -1 under the front face. Leave room for the offset with padding/margin so the hand doesn't overlap the cards next to it. The DOM and click targets stay the same apart from the decorative spans, so the e2e selectors keep working.
