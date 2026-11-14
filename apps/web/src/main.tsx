@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState, type ReactElement } from "react";
+import { StrictMode, useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
@@ -180,6 +180,23 @@ function ThemeSelector({ selected, host, locked, busy, select }: { selected: The
 		const active = theme.id === selected.id;
 		return <button type="button" className={`theme-option ${theme.className}${active ? " theme-option--selected" : ""}`} key={theme.id} disabled={!host || locked || busy} aria-pressed={active} onClick={() => select(theme.id)}><span className="theme-option__fan"><CreatureArt creature="torakka" themeId={theme.id} small /><CreatureArt creature="hamahakki" themeId={theme.id} small /></span><strong>{theme.name}</strong><small>{theme.id === "herrasmiespokeri" ? "Herrasmiehiä, promilleja ja klubin häpeää." : "Örkkejä, ötököitä ja huonoja ystäviä."}</small>{active && <b>{FI.lobby.themeSelected}</b>}</button>;
 	})}</div>{!host && <p className="fineprint">{FI.lobby.hostChoosesTheme}</p>}{locked && <p className="fineprint">{FI.lobby.themeLocked}</p>}</section>;
+}
+interface HandoffPath { fromX: number; fromY: number; toX: number; toY: number }
+function measureHandoff(table: HTMLElement | null, from: string, to: string): HandoffPath | null {
+	if (!table) { return null; }
+	const bounds = table.getBoundingClientRect();
+	const sender = table.querySelector<HTMLElement>(`[data-seat-id="${CSS.escape(from)}"]`)?.getBoundingClientRect();
+	const receiver = table.querySelector<HTMLElement>(`[data-seat-id="${CSS.escape(to)}"]`)?.getBoundingClientRect();
+	if (!sender || !receiver) { return null; }
+	return {
+		fromX: sender.left + sender.width / 2 - bounds.left,
+		fromY: sender.top + sender.height / 2 - bounds.top,
+		toX: receiver.left + receiver.width / 2 - bounds.left,
+		toY: receiver.top + receiver.height / 2 - bounds.top,
+	};
+}
+function handoffStyle(path: HandoffPath): CSSProperties {
+	return { "--handoff-from-x": `${path.fromX}px`, "--handoff-from-y": `${path.fromY}px`, "--handoff-to-x": `${path.toX - path.fromX}px`, "--handoff-to-y": `${path.toY - path.fromY}px` } as CSSProperties;
 }
 function randomCardFan(cards: readonly Creature[]): Creature[] {
 	const shuffled = [...cards];
@@ -427,7 +444,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const [answerFlash, setAnswerFlash] = useState(false);
 	const [selectedCard, setSelectedCard] = useState<Creature | null>(null);
 	const [selectedTarget, setSelectedTarget] = useState("");
-	const [handoff, setHandoff] = useState<{ from: string; to: string } | null>(null);
+	const [handoff, setHandoff] = useState<{ from: string; to: string; path: HandoffPath | null } | null>(null);
 	const [peeking, setPeeking] = useState(false);
 	const [nextTurnSeat, setNextTurnSeat] = useState<string | null>(game.phase === "initiation" ? game.activeSeatId : null);
 	const [routePaths, setRoutePaths] = useState<{ d: string; labelX: number; labelY: number }[]>([]);
@@ -451,7 +468,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const isNewHandoff = Boolean(latestClaim && (old.challengeId !== game.challenge?.id || old.claimCount < (game.challenge?.claims.length ?? 0)));
 		if (isNewHandoff && latestClaim) {
 			setNextTurnSeat(null);
-			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId });
+			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId, path: measureHandoff(tableRef.current, latestClaim.senderId, latestClaim.receiverId) });
 			if (!muted) {
 				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
 				void playNormalizedAudio(selectRandomAudio(variants), 0.48).catch(function () { return; });
@@ -583,6 +600,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 	const ownSeatIndex = me ? game.seats.findIndex(seat => seat.id === me.id) : -1;
 	const orderedSeats = ownSeatIndex >= 0 ? [...game.seats.slice(ownSeatIndex + 1), ...game.seats.slice(0, ownSeatIndex), game.seats[ownSeatIndex]!] : game.seats;
 	return <main ref={tableRef} className={`table${choosingTarget ? " table--choosing-target" : ""}${choosingResponse ? " table--choosing-response" : ""}`}><div className="table__heading"><div><p className="eyebrow">{FI.table.eyebrow}</p><h1>{game.phase === "ended" ? FI.table.endedHeading : FI.table.activeHeading}</h1></div><span className="table__limit">{theme.threshold(game.threshold)}</span></div>
+		{handoff?.path && <div className="handoff-card handoff-card--targeted" aria-hidden="true" style={handoffStyle(handoff.path)}><span>✳</span></div>}
 		{routePaths.length > 0 && <svg className="table-routes" aria-hidden="true"><defs><marker id="route-arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="context-stroke" /></marker></defs>{routePaths.map(function (route, index) { const current = index === routePaths.length - 1; return <g key={index} className={`table-routes__segment table-routes__segment--${index % 4}${current ? " table-routes__segment--current" : ""}`}><path className="table-routes__path" d={route.d} markerEnd="url(#route-arrow)" /><circle cx={route.labelX} cy={route.labelY} r="10" /><text x={route.labelX} y={route.labelY + 3}>{index + 1}</text></g>; })}</svg>}
 		<div className={`seats${game.phase !== "ended" ? ` seats--around seats--${orderedSeats.length}` : ""}`}>{orderedSeats.map(function (seat) {
 			const member = state.members.find(m => m.id === seat.personId);
@@ -597,7 +615,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			</article>;
 		})}</div>
 		{game.phase === "ended" ? <section className="end-panel"><p className="eyebrow">{game.loserSeatId ? FI.table.loser : FI.table.cancelled}</p><h2>{game.seats.find(s => s.id === game.loserSeatId)?.name ?? FI.table.noLoser}</h2><p>{game.endReason === "matching" ? theme.matchingLoss(game.threshold) : game.endReason === "empty" ? FI.table.emptyHandLoss : FI.session.gameEnded}</p>{state.hostId === state.me && <div className="end-panel__actions"><button className="button button--primary" onClick={() => command({ kind: "rematch" })}>{FI.table.rematch}</button><button className="button button--danger" onClick={function () { if (confirm(FI.table.endPlayingConfirm)) { void command({ kind: "close-lobby" }); } }}>{FI.table.endPlaying}</button></div>}<History items={state.history.filter(h => h.id === game.id)} /></section> : <>
-			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}{nextTurnSeat && !result && <div className="turn-banner" role="status"><span>{nextTurnSeat === me?.id ? FI.table.yourTurn : FI.table.nextPlayer(game.seats.find(s => s.id === nextTurnSeat)?.name ?? "")}</span></div>}
+			<section className={`play-area${answerFlash && personalOutcomePositive !== null ? personalOutcomePositive ? " play-area--answer-correct" : " play-area--answer-wrong" : ""}${handoff ? " play-area--handoff" : ""}${peeking ? " play-area--peeking" : ""}`}><div className="play-area__grain" />{handoff && !handoff.path && <div className="handoff-card" aria-hidden="true"><span>✳</span></div>}{nextTurnSeat && !result && <div className="turn-banner" role="status"><span>{nextTurnSeat === me?.id ? FI.table.yourTurn : FI.table.nextPlayer(game.seats.find(s => s.id === nextTurnSeat)?.name ?? "")}</span></div>}
 				{game.challenge ? <><div className="claim-presentation"><div data-creature={game.challenge.card?.creature} className={`playing-card${game.challenge.card ? " playing-card--known" : ""}`}>{game.challenge.card ? <><CreatureArt creature={game.challenge.card.creature} themeId={theme.id} /><strong>{theme.labels[game.challenge.card.creature]}</strong></> : <><span>✳</span><small>{theme.cardBack}</small></>}</div><span className="claim-presentation__arrow" aria-hidden="true">→</span><div data-creature={claim!.creature} className="claimed-card" aria-label={FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"), claimChanged)}><small>{FI.table.claimCard}</small><CreatureArt creature={claim!.creature} themeId={theme.id} small /><strong>{theme.labels[claim!.creature]}</strong></div></div><h2>{FI.table.claim(claimSender, theme.labels[claim!.creature].toLocaleLowerCase("fi"), claimChanged)}</h2><p><strong>{claimReceiver}n</strong> {FI.table.claimRecipient}</p></> : <><div className="table-mark">✳</div><h2>{FI.table.startTurn(game.seats.find(s => s.id === game.activeSeatId)?.name ?? "")}</h2><p>{FI.table.startPrompt}</p></>}
 				{result && resolution && <div className="resolution" role="status"><div className={`decision-token${resolution.receiverBelieves ? " decision-token--believe" : " decision-token--disbelieve"}`}><span>{resolution.receiverBelieves ? "✓" : "✕"}</span>{decisionLabel}</div><div className="showdown"><div data-creature={resolution.claims.at(-1)!.creature} className="showdown__card showdown__card--claim"><small>VÄITE</small><CreatureArt creature={resolution.claims.at(-1)!.creature} themeId={theme.id} /><strong>{theme.labels[resolution.claims.at(-1)!.creature]}</strong></div><div data-creature={resolution.card.creature} className="showdown__card showdown__card--truth"><small>KORTTI</small><CreatureArt creature={resolution.card.creature} themeId={theme.id} /><strong>{theme.labels[resolution.card.creature]}</strong></div><span className={`showdown__stamp${resolution.claims.at(-1)!.creature === resolution.card.creature ? " showdown__stamp--true" : " showdown__stamp--false"}`}>{resolution.claims.at(-1)!.creature === resolution.card.creature ? "TOTTA" : "VALHE"}</span></div><p>{resolution.cancelled ? FI.table.cancelledRound : FI.table.takesCard(game.seats.find(s => s.id === resolution.penaltySeatId)?.name ?? "")}</p><span>{emoji} {outcome.length ? FI.round.correctAudienceGuesses(outcome.filter(Boolean).length, outcome.length) : ""}</span></div>}
 			</section>

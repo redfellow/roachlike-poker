@@ -1,6 +1,6 @@
 ## 1. Targeted handoff animation
 
-- [ ] 1.1 Measure sender/receiver seat panels on handoff in `apps/web/src/main.tsx`, set offset custom properties on `.handoff-card`, rewrite `table-handoff` keyframes and time `seat--receiving` to arrival in `apps/web/src/style.css`, with centre fallback
+- [x] 1.1 Measure sender/receiver seat panels on handoff in `apps/web/src/main.tsx`, set offset custom properties on `.handoff-card`, rewrite `table-handoff` keyframes and time `seat--receiving` to arrival in `apps/web/src/style.css`, with centre fallback
   - proof: `npx eslint apps/web/src/main.tsx`
   - proof: `npm run typecheck`
 
