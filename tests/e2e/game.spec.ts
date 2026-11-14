@@ -62,7 +62,7 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible({ timeout: 10000 });
 		await expect(pages[1]!.getByText("Kaikki näyttävät syyllisiltä.")).toBeVisible();
 		// No history yet: no History button before the first match ends.
-		await expect(pages[0]!.locator(".topbar").getByRole("button", { name: /Historia/ })).toHaveCount(0);
+		await expect(pages[0]!.getByRole("button", { name: /Historia/, includeHidden: true })).toHaveCount(0);
 		await pages[2]!.goto(`/r/${id}`);
 		await pages[2]!.getByLabel("Millä nimellä sinua kirotaan?").fill("Katsoja");
 		await pages[2]!.getByRole("button", { name: "Liity pöytään" }).click();
