@@ -1,0 +1,13 @@
+format: 1
+slug: fix-failing-check-e2e
+title: "Fix failing check: e2e"
+x-harvaaja-card: 4d7b75db-f800-4551-ab70-e27d2bf07054
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: chore
+  rationale: "Chore: built without a plan"
+  citations:
+    - The user pressed Build on this chore
+  revision: 9ce3ec2c-da8f-4aaf-9ad1-70453af1a6b2
