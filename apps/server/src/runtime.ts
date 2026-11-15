@@ -256,7 +256,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			requireCondition(game, "Peli ei ole alkanut.");
 			requireCondition(actor === room.hostId && game.phase === "ended", "Vain isäntä voi palata aulaan pelin päätyttyä.");
 			room.game = null; room.ready = room.seated.filter(id => room.members.some(item => item.id === id && item.computer)); room.countdownAt = null; room.vote = null; room.waitingSeatId = null; room.promptAt = null;
-			room.notice = "Takaisin aulassa. Ilmoittaudu valmiiksi.";
+			room.notice = "Uusi peli, samat huonot ystävät. Ilmoittaudu valmiiksi.";
 		}
 		else if (action.kind === "end") {
 			requireCondition(game, "Peli ei ole alkanut.");
