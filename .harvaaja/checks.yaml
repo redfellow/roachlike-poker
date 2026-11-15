@@ -1,0 +1,23 @@
+setup:
+  check: install
+  clean: [node_modules]
+checks:
+  # The sandbox can read ~/.npm but not write it, so a plain `npm ci` fails with EPERM once it must cache a package.
+  - name: install
+    run: npm ci --no-audit --no-fund --cache "$TMPDIR/harvaaja-npm-cache"
+    network: [registry.npmjs.org]
+    timeoutSeconds: 900
+  - name: typecheck
+    run: npm run typecheck
+    covers: [npx tsc]
+  - name: lint
+    run: npm run lint
+    covers: [npx eslint]
+  - name: unit
+    run: npm test
+    covers: [npx vitest, npm test]
+  # Playwright needs Chrome (channel: chrome) and a dev server; safer to run on the real machine at release.
+  - name: e2e
+    run: npm run test:e2e
+    stage: release
+    sandbox: none
