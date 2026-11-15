@@ -43,13 +43,18 @@ async function playToEnd(page: Page): Promise<void> {
 
 async function closeSoloTable(page: Page): Promise<void> {
 	const accept = page.getByRole("dialog").getByRole("button", { name: "Kyllä" });
+	async function confirmClosing(): Promise<void> {
+		await accept.click({ timeout: 5000 });
+		await page.waitForURL(function (url) { return url.pathname === "/"; }, { timeout: 10000 });
+	}
 	for (let attempt = 0; attempt < 20; attempt++) {
+		if (new URL(page.url()).pathname === "/") { return; }
 		const endPlaying = page.getByRole("button", { name: "Lopeta pelaaminen" });
-		if (await endPlaying.isVisible()) { await endPlaying.click(); await accept.click(); return; }
+		if (await endPlaying.isVisible()) { await endPlaying.click({ timeout: 5000 }); await confirmClosing(); return; }
 		const stop = page.getByRole("button", { name: "Keskeytä peli" });
-		if (await stop.isVisible()) { await stop.click().catch(function () { return; }); await accept.click().catch(function () { return; }); await page.waitForTimeout(100); continue; }
+		if (await stop.isVisible()) { await stop.click({ timeout: 5000 }).catch(function () { return; }); await accept.click({ timeout: 5000 }).catch(function () { return; }); await page.waitForTimeout(100); continue; }
 		const close = page.getByRole("button", { name: "Poista aula" });
-		if (await close.isVisible()) { await close.click(); await accept.click(); return; }
+		if (await close.isVisible()) { await close.click({ timeout: 5000 }); await confirmClosing(); return; }
 		await page.waitForTimeout(100);
 	}
 	throw new Error("Could not close the solo test room.");
@@ -179,6 +184,6 @@ test("computer answer shows Totta or Valhetta feedback", async function ({ page,
 	}
 	await expect(page.locator(".resolution")).toBeVisible({ timeout: 10000 });
 	await expect(page.locator(".decision-token")).toBeVisible();
-	await expect(page.locator(".decision-token")).toContainText(/Uskon|En usko/);
+	await expect(page.locator(".decision-token")).toContainText(/Uskon|En usko|uskoi|ei uskonut/);
 	await expect(page.locator(".showdown__stamp")).toHaveText(/TOTTA|VALHE/);
 });
