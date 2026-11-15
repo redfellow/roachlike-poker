@@ -3712,7 +3712,8 @@ summary {
 		transform: translate(-50%, -50%);
 	}
 
-	.seats--around {
+	.seats--around,
+	.seats--around+.play-area {
 		--felt-inline-edge: 20%;
 		--seat-felt-overlap: 18px;
 		--seat-width: clamp(190px, 19vw, 260px);
@@ -3723,6 +3724,9 @@ summary {
 		--seat-y-bottom: 365px;
 		--play-area-top-gap: 78px;
 		--play-area-bottom-gap: 120px;
+	}
+
+	.seats--around {
 		display: block;
 		position: relative;
 		height: 0;
@@ -3948,8 +3952,11 @@ summary {
 	}
 
 	.topbar__tools {
+		flex-wrap: wrap;
+		justify-content: flex-end;
 		gap: 0;
 		margin-left: auto;
+		max-width: 100%;
 	}
 
 	.topbar__tools .button {
