@@ -150,6 +150,7 @@ export const FI = {
 		matchingLoss: (count: number) => `${count} samaa örkkiä. Luonto voitti.`,
 		emptyHandLoss: "Tyhjä käsi, kylmä perse.",
 		rematch: "Uusi peli samalla porukalla",
+		backToLobby: "Takaisin aulaan",
 		endPlaying: "Lopeta pelaaminen",
 		endPlayingConfirm: "Lopetetaanko pelaaminen? Aula poistetaan ja kaikki pelaajat katkaistaan.",
 		claimOnTable: "VÄITE ON PÖYDÄSSÄ",

@@ -178,7 +178,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		const game = room.game;
 		const member = room.members.find(m => m.id === actor)!;
 		if (action.kind === "ready" || action.kind === "sit" || action.kind === "stand") {
-			requireCondition(!game, "Odota pelin päättymistä ja uutta aulaa.");
+			requireCondition(!game, "Odota, kunnes isäntä palaa aulaan.");
 			if (action.kind === "sit") {
 				requireCondition(room.seated.length < 6 && !room.seated.includes(actor), "Paikkaa ei ole vapaana.");
 				room.seated.push(actor); room.countdownAt = null;
@@ -252,6 +252,12 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 			room.countdownAt = null; room.vote = null; room.waitingSeatId = null;
 			startMatch(room);
 		}
+		else if (action.kind === "lobby") {
+			requireCondition(game, "Peli ei ole alkanut.");
+			requireCondition(actor === room.hostId && game.phase === "ended", "Vain isäntä voi palata aulaan pelin päätyttyä.");
+			room.game = null; room.ready = room.seated.filter(id => room.members.some(item => item.id === id && item.computer)); room.countdownAt = null; room.vote = null; room.waitingSeatId = null; room.promptAt = null;
+			room.notice = "Takaisin aulassa. Ilmoittaudu valmiiksi.";
+		}
 		else if (action.kind === "end") {
 			requireCondition(game, "Peli ei ole alkanut.");
 			requireCondition(actor === room.hostId && game.phase !== "ended", "Vain isäntä voi päättää käynnissä olevan pelin.");
@@ -259,7 +265,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}
 		else if (action.kind === "remove") {
 			requireCondition(actor === room.hostId, "Vain isäntä voi poistaa pelaajan.");
-			requireCondition(!game || game.phase !== "ended", "Avaa uusi aula ennen pelaajien poistamista.");
+			requireCondition(!game || game.phase !== "ended", "Palaa aulaan ennen pelaajien poistamista.");
 			const target = game?.seats.find(s => s.id === action.seatId && !s.removed) ?? room.members.find(m => m.id === action.seatId);
 			requireCondition(target, "Pelaajaa ei ole pöydässä.");
 			if (!game) {

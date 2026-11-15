@@ -331,6 +331,75 @@ describe("authoritative room transport", function () {
 		expect(restored.state!.game!.id).toBe(ended.id);
 		expect(restored.state!.game!.phase).toBe("ended");
 	});
+	it("Host returns the room to a lobby / Rematch keeps computers ready: the ended match clears, computers stay ready and humans are not", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		const guest = await connect(url, roomId, "B");
+		await synced([host, guest]);
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect((await act(guest, { kind: "ready", ready: true })).ok).toBe(true);
+		await synced([host, guest]);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		if (host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); }
+		expect((await act(host, { kind: "lobby" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect(guest.state!.game).toBeNull();
+		expect(guest.state!.history).toHaveLength(1);
+		const members = guest.state!.members;
+		expect(members.filter(member => member.seated)).toHaveLength(3);
+		expect(members.filter(member => member.computer).every(member => member.ready)).toBe(true);
+		expect(members.filter(member => !member.computer).some(member => member.ready)).toBe(false);
+	});
+	it("Group changes in the returned lobby: a newcomer sits and the host removes a seat", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game));
+		if (host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); }
+		expect((await act(host, { kind: "lobby" })).ok).toBe(true);
+		const newcomer = await connect(url, roomId, "C");
+		if (newcomer.state!.members.find(member => member.id === newcomer.state!.me)!.seated) { expect((await act(newcomer, { kind: "stand" })).ok).toBe(true); }
+		expect((await act(newcomer, { kind: "sit" })).ok).toBe(true);
+		expect(newcomer.state!.members.find(member => member.id === newcomer.state!.me)!.seated).toBe(true);
+		await synced([host, newcomer]);
+		const computer = host.state!.members.find(member => member.computer)!;
+		expect((await act(host, { kind: "remove", seatId: computer.id })).ok).toBe(true);
+		expect(host.state!.members.some(member => member.id === computer.id)).toBe(false);
+		expect(host.state!.game).toBeNull();
+	});
+	it("Only the host returns to a lobby after the end: rejects a non-host and a match in play", async function () {
+		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
+		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;
+		const host = await connect(url, roomId, "A");
+		const guest = await connect(url, roomId, "B");
+		await synced([host, guest]);
+		expect((await act(host, { kind: "lobby" })).ok).toBe(false);
+		expect((await act(host, { kind: "add-computer" })).ok).toBe(true);
+		await synced([host, guest]);
+		expect((await act(guest, { kind: "ready", ready: true })).ok).toBe(true);
+		await synced([host, guest]);
+		expect((await act(host, { kind: "ready", ready: true })).ok).toBe(true);
+		await waitFor(() => Boolean(host.state!.game) && Boolean(guest.state!.game));
+		await synced([host, guest]);
+		const playing = host.state!.game!.phase !== "ended";
+		const cases: { label: string; client: Client; end: boolean }[] = [
+			{ label: "host while in play", client: host, end: false },
+			{ label: "guest while in play", client: guest, end: false },
+			{ label: "guest after the end", client: guest, end: true }
+		];
+		for (const item of cases) {
+			if (item.end && host.state!.game!.phase !== "ended") { expect((await act(host, { kind: "end" })).ok).toBe(true); await synced([host, guest]); }
+			if (!item.end && !playing) { continue; }
+			expect((await act(item.client, { kind: "lobby" })).ok, item.label).toBe(false);
+			expect(host.state!.game, item.label).not.toBeNull();
+		}
+	});
 	it("Players at one table look different / Icon survives a new game: icons are distinct and kept across rematch and reconnect", async function () {
 		const { runtime, url } = await start(":memory:", { countdownMs: 0, computerDelayMs: 5000 });
 		const roomId = (await runtime.app.inject({ method: "POST", url: "/api/rooms" })).json<{ id: string }>().id;

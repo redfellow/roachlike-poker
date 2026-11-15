@@ -22,6 +22,7 @@ export const commandSchema = z.object({
 		z.object({ kind: z.literal("set-open"), open: z.boolean() }),
 		z.object({ kind: z.literal("set-theme"), themeId: z.enum(THEME_IDS) }),
 		z.object({ kind: z.literal("rematch") }),
+		z.object({ kind: z.literal("lobby") }),
 		z.object({ kind: z.literal("end") }),
 		z.object({ kind: z.literal("close-lobby") }),
 		z.object({ kind: z.literal("remove"), seatId: id }),
