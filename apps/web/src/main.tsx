@@ -4,7 +4,7 @@ import { io, type Socket } from "socket.io-client";
 import { CREATURES, type Creature, type GameView, type Recap, type Resolution, type Score, type ThemeRef } from "@torakka/game";
 import { PLAYER_ICON_COLOURS, PLAYER_ICON_SHAPES, type OpenRoomView, type PlayerIcon, type PlayerIconShape, type Reply, type RoomAction, type RoomView } from "@torakka/protocol";
 import { CreatureArt } from "./CreatureArt";
-import { playNormalizedAudio, selectNextAudio, selectRandomAudio } from "./audio";
+import { playNormalizedAudio, selectNextAudio, selectRandomAudio, soundVolume } from "./audio";
 import { FI } from "./strings.fi";
 import { AVAILABLE_THEMES, themeFor, type ThemeDefinition } from "./themes";
 import "./style.css";
@@ -27,60 +27,12 @@ const LOSS_VARIANTS = [
 const UI_CLICK_VARIANT = "/audio/ui-click-01.mp3";
 const COUNTDOWN_VARIANT = "/audio/countdown-01.mp3";
 const RESPONSE_PROMPT_VARIANT = "/audio/claim-intro-01.mp3";
-const BACKGROUND_MUSIC = "/audio/red_trax__bacon_fat.mp3";
-const MAX_BACKGROUND_MUSIC_VOLUME = 0.5;
-const DEFAULT_MUSIC_LEVEL = 25;
+const DEFAULT_SOUND_LEVEL = 100;
 const MAX_HAND_STACK_LAYERS = 4;
 
-let backgroundMusic: HTMLAudioElement | null = null;
-function musicPlayer(): HTMLAudioElement {
-	if (!backgroundMusic) {
-		backgroundMusic = new Audio(BACKGROUND_MUSIC);
-		backgroundMusic.loop = true;
-		backgroundMusic.preload = "auto";
-		backgroundMusic.volume = DEFAULT_MUSIC_LEVEL / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-	}
-	return backgroundMusic;
-}
-function useBackgroundMusic(active: boolean, level: number, fadeOut = false): void {
-	useEffect(function () {
-		const player = musicPlayer();
-		const targetVolume = Math.max(0, Math.min(100, level)) / 100 * MAX_BACKGROUND_MUSIC_VOLUME;
-		let frame = 0;
-		let finished = false;
-		function removeUnlockListeners(): void {
-			window.removeEventListener("pointerdown", tryPlay);
-			window.removeEventListener("keydown", tryPlay);
-		}
-		function tryPlay(): void {
-			if (!active || targetVolume === 0 || finished) { return; }
-			void player.play().then(removeUnlockListeners).catch(function () { return; });
-		}
-		removeUnlockListeners();
-		if (!active || targetVolume === 0) {
-			player.pause();
-			player.volume = targetVolume;
-			return;
-		}
-		player.volume = targetVolume;
-		tryPlay();
-		window.addEventListener("pointerdown", tryPlay);
-		window.addEventListener("keydown", tryPlay);
-		if (fadeOut) {
-			const startedAt = performance.now();
-			function fade(now: number): void {
-				const progress = Math.min(1, (now - startedAt) / 2000);
-				player.volume = targetVolume * (1 - progress);
-				if (progress < 1) { frame = requestAnimationFrame(fade); return; }
-				finished = true;
-				player.pause();
-				player.volume = targetVolume;
-				removeUnlockListeners();
-			}
-			frame = requestAnimationFrame(fade);
-		}
-		return function () { finished = true; cancelAnimationFrame(frame); removeUnlockListeners(); };
-	}, [active, fadeOut, level]);
+function playSound(source: string, base: number, level: number): void {
+	if (level <= 0) { return; }
+	void playNormalizedAudio(source, soundVolume(base, level)).catch(function () { return; });
 }
 
 function stored(key: string, fallback = ""): string { return localStorage.getItem(key) ?? fallback; }
@@ -111,20 +63,22 @@ function usePreference(key: string, fallback: boolean): [boolean, (value: boolea
 	function update(next: boolean): void { setValue(next); localStorage.setItem(key, String(next)); }
 	return [value, update];
 }
-function useMusicLevel(): [number, (value: number) => void] {
+function useSoundLevel(): [number, (value: number) => void] {
 	const [value, setValue] = useState(function () {
-		const saved = localStorage.getItem("torakka:music-volume");
+		localStorage.removeItem("torakka:music-volume");
+		localStorage.removeItem("torakka:music-muted");
+		const saved = localStorage.getItem("torakka:sound-volume");
 		if (saved !== null) {
 			const parsed = Number(saved);
 			if (Number.isFinite(parsed)) { return Math.max(0, Math.min(100, parsed)); }
 		}
-		return stored("torakka:music-muted", "false") === "true" ? 0 : DEFAULT_MUSIC_LEVEL;
+		return stored("torakka:muted", "false") === "true" ? 0 : DEFAULT_SOUND_LEVEL;
 	});
 	function update(next: number): void {
 		const safe = Math.max(0, Math.min(100, next));
 		setValue(safe);
-		localStorage.setItem("torakka:music-volume", String(safe));
-		localStorage.removeItem("torakka:music-muted");
+		localStorage.setItem("torakka:sound-volume", String(safe));
+		localStorage.removeItem("torakka:muted");
 	}
 	return [value, update];
 }
@@ -157,8 +111,8 @@ function ResponseIcon({ kind }: { kind: "believe" | "disbelieve" | "forward" }):
 	</svg>;
 }
 function Logo({ theme = themeFor(undefined), showVersion = false }: { theme?: ThemeDefinition; showVersion?: boolean }): ReactElement { return <InternalLink className="logo" href="/" aria-label={theme.brand.label}><span className="logo__bug">✳</span> {theme.brand.first}<span className="logo__light">{theme.brand.second}</span>{showVersion && <small className="logo__version">v{__APP_VERSION__}</small>}</InternalLink>; }
-function MusicVolume({ level, setLevel }: { level: number; setLevel: (value: number) => void }): ReactElement {
-	return <label className="music-volume"><span>{FI.session.musicLabel}</span><input type="range" min="0" max="100" step="5" value={level} onChange={event => setLevel(Number(event.target.value))} aria-label={FI.session.musicLabel} /><output>{level}%</output></label>;
+function SoundVolume({ level, setLevel }: { level: number; setLevel: (value: number) => void }): ReactElement {
+	return <label className="sound-volume"><span>{FI.session.soundLabel}</span><input type="range" min="0" max="100" step="5" value={level} onChange={event => setLevel(Number(event.target.value))} aria-label={FI.session.soundLabel} /><output>{level}%</output></label>;
 }
 function Rules({ theme = themeFor(undefined) }: { theme?: ThemeDefinition }): ReactElement {
 	const steps = [theme.rulesFirst, FI.rules.steps[1], FI.rules.steps[2], theme.rulesLoss, FI.rules.steps[4]];
@@ -231,7 +185,7 @@ function App(): ReactElement {
 	const [openRooms, setOpenRooms] = useState<OpenRoomView[]>([]);
 	const [resumeRoomId, setResumeRoomId] = useState("");
 	const [joinTheme, setJoinTheme] = useState<ThemeRef | undefined>();
-	const [musicLevel, setMusicLevel] = useMusicLevel();
+	const [soundLevel, setSoundLevel] = useSoundLevel();
 	const landingTheme = themeFor(joinTheme);
 	useEffect(function () {
 		setJoinedRoomId(roomId && stored("torakka:name") && stored(`torakka:token:${roomId}`) ? roomId : "");
@@ -282,17 +236,13 @@ function App(): ReactElement {
 		catch (err) { setError(err instanceof Error ? err.message : FI.error.connection); }
 		finally { setCreating(false); }
 	}
-	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} musicLevel={musicLevel} setMusicLevel={setMusicLevel} returnToJoin={() => setJoinedRoomId("")} />; }
-	return <div className={`landing ${landingTheme.className}`}><BackgroundMusic active level={musicLevel} /><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><MusicVolume level={musicLevel} setLevel={setMusicLevel} /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
+	if (joined && roomId) { return <Session roomId={roomId} name={name.trim()} soundLevel={soundLevel} setSoundLevel={setSoundLevel} returnToJoin={() => setJoinedRoomId("")} />; }
+	return <div className={`landing ${landingTheme.className}`}><header className="topbar"><Logo theme={landingTheme} showVersion /><nav className="topbar__tools"><SoundVolume level={soundLevel} setLevel={setSoundLevel} /><button className="button button--quiet" onClick={() => setRules(!rules)}>{FI.landing.rulesButton}</button></nav></header>
 		<main className="landing__main"><div className="landing__copy"><p className="eyebrow">{FI.landing.eyebrow}</p><h1>{FI.landing.headingFirst}<br /><em>{FI.landing.headingEmphasis}</em><br />{FI.landing.headingLast}</h1><p className="lede">{landingTheme.landingLede}</p>
 			{roomId ? <form className="join-form" onSubmit={function (event) { event.preventDefault(); localStorage.setItem("torakka:name", name.trim()); setJoinedRoomId(roomId); }}><label htmlFor="name">{FI.landing.joinLabel}</label><div className="join-form__row"><input id="name" autoComplete="nickname" autoFocus maxLength={24} required value={name} onChange={e => setName(e.target.value)} placeholder={FI.landing.namePlaceholder} /><button className="button button--primary" disabled={!name.trim()}>{FI.landing.join}</button></div><p className="fineprint">{FI.landing.accountNote}</p></form> : <><div className="landing__actions"><button className="button button--primary button--large" onClick={createRoom} disabled={creating}>{creating ? FI.landing.creatingRoom : FI.landing.createRoom}</button>{resumeRoomId && <InternalLink className="button button--quiet" href={`/r/${resumeRoomId}`}>{FI.landing.resumeRoom}</InternalLink>}<p className="fineprint">{FI.landing.privacyNote}</p></div>{openRooms.length > 0 && <section className="open-rooms"><h2>{FI.landing.openRooms}</h2><div>{openRooms.map(room => <InternalLink href={`/r/${room.id}`} className={`open-room ${themeFor(room.themeId).className}`} key={room.id}><strong>{FI.landing.hostRoom(room.hostName)}</strong><span><b>{themeFor(room.themeId).name}</b> · {FI.landing.roomPlayers(room.seatedCount)} · {room.playing ? FI.landing.roomPlaying : FI.landing.roomLobby}</span></InternalLink>)}</div></section>}</>}
 			{error && <p role="alert" className="error">{error}</p>}
 		</div><div className="landing__art" aria-hidden="true"><div className="hero-card hero-card--back"><span>{landingTheme.cardBack}</span><CreatureArt creature="hamahakki" themeId={landingTheme.id} /></div><div className="hero-card"><span className="eyebrow">{FI.landing.frontCard}</span><CreatureArt creature="torakka" themeId={landingTheme.id} /><strong>{landingTheme.labels.torakka}</strong><span className="hero-card__serial">{landingTheme.cardSerial}</span></div><span className="stamp">{FI.landing.stampFirst}<br />{FI.landing.stampSecond}</span></div></main>
 		<footer className="landing__footer"><span>{FI.landing.footerLeft}</span><span>{FI.landing.footerRight}</span><span>Based on <a href="https://en.wikipedia.org/wiki/Cockroach_Poker" target="_blank" rel="noopener noreferrer">Cockroach Poker</a>, designed by Jacques Zeimet.</span></footer>{rules && <Modal close={() => setRules(false)}><Rules theme={landingTheme} /></Modal>}</div>;
-}
-function BackgroundMusic({ active, level, fadeOut = false }: { active: boolean; level: number; fadeOut?: boolean }): null {
-	useBackgroundMusic(active, level, fadeOut);
-	return null;
 }
 function Modal({ close, children }: { close: () => void; children: React.ReactNode }): ReactElement {
 	const dialog = useRef<HTMLElement | null>(null);
@@ -328,7 +278,7 @@ function useConfirmation(): [(question: string, accept: () => void) => void, Rea
 	const dialog = pending && <Modal close={cancel}><div className="confirmation"><p className="confirmation__question">{pending.question}</p><div className="confirmation__actions"><button type="button" className="button button--danger" onClick={confirmPending}>{FI.common.confirmYes}</button><button type="button" className="button button--quiet" onClick={cancel}>{FI.common.confirmCancel}</button></div></div></Modal>;
 	return [ask, dialog];
 }
-function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { roomId: string; name: string; musicLevel: number; setMusicLevel: (value: number) => void; returnToJoin: () => void }): ReactElement {
+function Session({ roomId, name, soundLevel, setSoundLevel, returnToJoin }: { roomId: string; name: string; soundLevel: number; setSoundLevel: (value: number) => void; returnToJoin: () => void }): ReactElement {
 	const socketRef = useRef<Socket | null>(null);
 	const [state, setState] = useState<RoomView | null>(null);
 	const [error, setError] = useState("");
@@ -339,28 +289,24 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const [rules, setRules] = useState(false);
 	const [history, setHistory] = useState(false);
 	const [askConfirmation, confirmationDialog] = useConfirmation();
-	const [muted, setMuted] = usePreference("torakka:muted", false);
 	const [reduced, setReduced] = usePreference("torakka:reduced", matchMedia("(prefers-reduced-motion: reduce)").matches);
 	const [guided, setGuided] = usePreference("torakka:guided", true);
 	const [time, setTime] = useState(Date.now());
 	const [copied, setCopied] = useState(false);
 	const [focusMode, setFocusMode] = usePreference("torakka:focus-mode", false);
 	const countdownSoundSecond = useRef<number | null>(null);
-	const musicActive = !state || !state.game || state.game.phase === "ended";
-	const musicFading = Boolean(state && !state.game && state.countdownAt !== null);
-	useBackgroundMusic(musicActive, musicLevel, musicFading);
 	useEffect(function () { if (state) { document.title = themeFor(state.theme).brand.documentTitle; } }, [state?.theme.id, state?.theme.version]);
 	useEffect(function () {
 		const timer = setInterval(() => setTime(Date.now()), 250); return function () { clearInterval(timer); };
 	}, []);
 	useEffect(function () {
-		if (muted || !state?.countdownAt || reduced) { countdownSoundSecond.current = null; return; }
+		if (soundLevel <= 0 || !state?.countdownAt || reduced) { countdownSoundSecond.current = null; return; }
 		const nextSecond = Math.max(1, Math.ceil((state.countdownAt - time) / 1000));
 		if (countdownSoundSecond.current !== nextSecond) {
 			countdownSoundSecond.current = nextSecond;
-			void playNormalizedAudio(COUNTDOWN_VARIANT, 0.5).catch(function () { return; });
+			playSound(COUNTDOWN_VARIANT, 0.5, soundLevel);
 		}
-	}, [muted, reduced, state?.countdownAt, time]);
+	}, [soundLevel, reduced, state?.countdownAt, time]);
 	useEffect(function () {
 		const socket = io(); socketRef.current = socket;
 		socket.on("connect", function () {
@@ -378,16 +324,16 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	}, [roomId, name]);
 	useEffect(function () {
 		function onClick(event: MouseEvent): void {
-			if (muted) { return; }
+			if (soundLevel <= 0) { return; }
 			const target = event.target;
 			if (!(target instanceof Element)) { return; }
 			const button = target.closest("button");
 			if (!button || button.hasAttribute("disabled")) { return; }
-			void playNormalizedAudio(UI_CLICK_VARIANT, 0.45).catch(function () { return; });
+			playSound(UI_CLICK_VARIANT, 0.45, soundLevel);
 		}
 		window.addEventListener("click", onClick);
 		return function () { window.removeEventListener("click", onClick); };
-	}, [muted]);
+	}, [soundLevel]);
 	async function command(action: RoomAction): Promise<void> {
 		if (!state || !connected || busy) { return; }
 		setBusy(true); setError("");
@@ -410,7 +356,7 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 	const game = state.game;
 	const theme = themeFor(state.theme);
 	const gentleman = theme.id === "herrasmiespokeri";
-	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools">{(!game || game.phase === "ended") && <MusicVolume level={musicLevel} setLevel={setMusicLevel} />}<label className="sound-toggle"><span className="sound-toggle__label">{FI.session.soundLabel}</span><input type="checkbox" role="switch" checked={!muted} onChange={event => setMuted(!event.target.checked)} /><span className="sound-toggle__track" aria-hidden="true"><span /></span></label>{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}{state.history.length > 0 && <button className="button button--quiet button--compact" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.stopGame}</button>}</nav></header>
+	return <div className={`app ${theme.className}${game ? " app--game" : ""}${reduced ? " app--reduced" : ""}${focusMode && game && game.phase !== "ended" ? " app--focus" : ""}`}><header className="topbar"><Logo theme={theme} /><nav className="topbar__tools"><SoundVolume level={soundLevel} setLevel={setSoundLevel} />{game && <><span className="game-status"><i className={`dot${connected ? "" : " dot--offline"}`} />{connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="button button--quiet button--compact">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></>}{state.history.length > 0 && <button className="button button--quiet button--compact" onClick={() => setHistory(true)}>{FI.session.history} <span className="badge">{state.history.length}</span></button>}<details className="topbar__more"><summary className="button button--quiet button--compact">{FI.session.more}</summary><div><button className="button button--quiet" onClick={() => setRules(true)}>{FI.session.rules}</button>{host && <><span className="topbar__more-label">{FI.lobby.theme}</span>{AVAILABLE_THEMES.map(function (option) { return <button type="button" key={option.id} className={`button button--quiet${option.id === theme.id ? " button--selected" : ""}`} aria-pressed={option.id === theme.id} disabled={busy || !connected || !game && state.countdownAt !== null} onClick={() => void command({ kind: "set-theme", themeId: option.id })}>{option.name}{option.id === theme.id && <span>✓</span>}</button>; })}</>}</div></details>{game && game.phase !== "ended" && <button className="button button--compact focus-enter" onClick={() => setFocusMode(true)}>{FI.session.focusMode}</button>}{host && game && game.phase !== "ended" && <button className="button button--danger button--compact" disabled={busy || !connected} onClick={function () { askConfirmation(FI.session.confirmEnd, function () { void command({ kind: "end" }); }); }}>{FI.session.stopGame}</button>}</nav></header>
 		<div className={game ? "game-stage" : "session-content"}>{focusMode && game && game.phase !== "ended" && <button className="button button--compact focus-restore" onClick={() => setFocusMode(false)}>{FI.session.exitFocusMode}</button>}
 			{!game && <div className="room-strip"><span><i className={`dot${connected ? "" : " dot--offline"}`} /> {connected ? state.open ? FI.session.openTable : FI.session.privateTable : FI.session.reconnecting}</span><button onClick={copyLink} className="text-button">{copied ? FI.session.linkCopied : FI.session.copyInvite}</button></div>}
 			{error && <div role="alert" className="error error--banner">{error}<button aria-label={FI.common.close} onClick={() => setError("")}>✕</button></div>}
@@ -426,16 +372,18 @@ function Session({ roomId, name, musicLevel, setMusicLevel, returnToJoin }: { ro
 				{!game && <button className="text-button text-button--danger" disabled={busy || !connected} onClick={function () { askConfirmation(FI.lobby.leaveConfirm, function () { void command({ kind: "leave-table" }); }); }}>{FI.lobby.leaveTable}</button>}
 				{state.countdownAt !== null && <div className="countdown" role="status"><strong>{Math.max(1, Math.ceil((state.countdownAt - time) / 1000))}</strong><span>{FI.lobby.countdown}</span></div>}
 				<div className="lobby__spectators"><h2>{FI.lobby.spectatorsHeading}</h2>{state.members.filter(m => !m.seated).length ? <div className="lobby__players">{state.members.filter(m => !m.seated).map(m => <div className="lobby-player" key={m.id}><Avatar icon={m.icon} gentleman={gentleman} /><span><strong>{m.name}{m.id === state.me ? FI.lobby.self : ""}</strong><small>{!m.online ? FI.lobby.offline : FI.lobby.readyState}</small></span></div>)}</div> : <p>{FI.lobby.spectatorsEmpty}</p>}</div>
-			</section><aside className="lobby__aside"><ThemeSelector selected={theme} host={host} locked={state.countdownAt !== null} busy={busy || !connected} select={id => void command({ kind: "set-theme", themeId: id })} /><LobbyCardPreview theme={theme} /><h3>{FI.common.settings}</h3>{host && <label className="check"><input type="checkbox" checked={state.open} disabled={busy || !connected} onChange={event => void command({ kind: "set-open", open: event.target.checked })} /> {FI.lobby.openRoom}</label>}<label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{host ? FI.lobby.openRoomNote : FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} muted={muted} reduced={reduced} guided={guided} time={time} />}</div>
+			</section><aside className="lobby__aside"><ThemeSelector selected={theme} host={host} locked={state.countdownAt !== null} busy={busy || !connected} select={id => void command({ kind: "set-theme", themeId: id })} /><LobbyCardPreview theme={theme} /><h3>{FI.common.settings}</h3>{host && <label className="check"><input type="checkbox" checked={state.open} disabled={busy || !connected} onChange={event => void command({ kind: "set-open", open: event.target.checked })} /> {FI.lobby.openRoom}</label>}<label className="check"><input type="checkbox" checked={guided} onChange={e => setGuided(e.target.checked)} /> {FI.lobby.guide}</label><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label><p className="fineprint">{host ? FI.lobby.openRoomNote : FI.lobby.preferencesNote}</p><p className="fineprint">{FI.lobby.spectators(state.members.filter(m => !m.seated).length)}</p></aside></main> : <Table key={game.id} state={state} command={command} busy={busy || !connected || Boolean(state.waitingSeatId)} soundLevel={soundLevel} reduced={reduced} guided={guided} time={time} />}</div>
 		<footer className="app__footer"><span aria-live="polite">{state.notice}</span><span>{theme.name.toLocaleUpperCase("fi")}</span></footer>
 		{rules && <Modal close={() => setRules(false)}><Rules theme={theme} /><label className="check"><input type="checkbox" checked={reduced} onChange={e => setReduced(e.target.checked)} /> {FI.common.reducedMotion}</label></Modal>}
 		{history && <Modal close={() => setHistory(false)}><History items={state.history} /></Modal>}
 		{confirmationDialog}
 	</div>;
 }
-function Table({ state, command, busy, muted, reduced, guided, time }: { state: RoomView; command: (action: RoomAction) => Promise<void>; busy: boolean; muted: boolean; reduced: boolean; guided: boolean; time: number }): ReactElement {
+function Table({ state, command, busy, soundLevel, reduced, guided, time }: { state: RoomView; command: (action: RoomAction) => Promise<void>; busy: boolean; soundLevel: number; reduced: boolean; guided: boolean; time: number }): ReactElement {
 	const game = state.game!;
 	const theme = themeFor(game.theme);
+	const soundLevelRef = useRef(soundLevel);
+	soundLevelRef.current = soundLevel;
 	const me = game.seats.find(s => s.personId === state.me && !s.removed);
 	const claim = game.challenge?.claims.at(-1);
 	const previousClaim = game.challenge?.claims.at(-2);
@@ -474,9 +422,9 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		if (isNewHandoff && latestClaim) {
 			setNextTurnSeat(null);
 			setHandoff({ from: latestClaim.senderId, to: latestClaim.receiverId, path: measureHandoff(tableRef.current, latestClaim.senderId, latestClaim.receiverId) });
-			if (!muted) {
+			if (soundLevelRef.current > 0) {
 				const variants = (game.challenge?.claims.length ?? 0) === 1 ? CARD_SEND_VARIANTS : CARD_PASS_VARIANTS;
-				void playNormalizedAudio(selectRandomAudio(variants), 0.48).catch(function () { return; });
+				playSound(selectRandomAudio(variants), 0.48, soundLevelRef.current);
 			}
 			const handoffTimer = setTimeout(() => setHandoff(null), 1250);
 			previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
@@ -494,7 +442,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 			return;
 		}
 		previous.current = { activeSeatId: game.activeSeatId, challengeId: game.challenge?.id, claimCount: game.challenge?.claims.length ?? 0, phase: game.phase };
-	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, muted, reduced]);
+	}, [game.activeSeatId, game.challenge?.card, game.challenge?.claims.length, game.challenge?.id, game.phase, me?.id, reduced]);
 	useEffect(function () {
 		if (!nextTurnSeat || result) { return; }
 		const timer = setTimeout(() => setNextTurnSeat(null), reduced ? 40 : 2800);
@@ -546,15 +494,14 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		return function () { cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener("resize", schedule); };
 	}, [game.challenge?.id, game.challenge?.claims.length]);
 	function playVariant(variant: string): void {
-		if (muted) { return; }
-		void playNormalizedAudio(variant, 0.7).catch(function () { return; });
+		playSound(variant, 0.7, soundLevelRef.current);
 	}
 	useEffect(function () {
 		const resolution = game.lastResolution;
 		if (!resolution || seen.current === resolution.id) { return; }
 		seen.current = resolution.id; setResult(true); setAnswerFlash(false);
 		const audioTimers: number[] = [];
-		if (!muted && !resolution.cancelled) {
+		if (soundLevelRef.current > 0 && !resolution.cancelled) {
 			playVariant(selectRandomAudio(resolution.receiverBelieves ? BELIEVE_VARIANTS : DISBELIEVE_VARIANTS));
 			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(CHALLENGE_REVEAL_VARIANTS)), 300));
 			audioTimers.push(window.setTimeout(() => playVariant(selectRandomAudio(PENALTY_TRANSFER_VARIANTS)), 650));
@@ -570,7 +517,7 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const flashStartTimer = setTimeout(() => setAnswerFlash(!reduced), reduced ? 100 : 2100);
 		const flashEndTimer = setTimeout(() => setAnswerFlash(false), reduced ? 120 : 7800);
 		return function () { clearTimeout(resultTimer); clearTimeout(flashStartTimer); clearTimeout(flashEndTimer); audioTimers.forEach(timer => clearTimeout(timer)); };
-	}, [game.lastResolution?.id, muted, reduced, state.me]);
+	}, [game.lastResolution?.id, reduced, state.me]);
 	const resolution = game.lastResolution;
 	const personalOutcomePositive = resolution && (resolution.receiverPersonId === state.me || resolution.claims.at(-1)?.senderPersonId === state.me) ? resolution.penaltyPersonId !== state.me : null;
 	const outcome = resolution?.claims.flatMap(c => c.predictions.map(p => p.believes === (c.creature === resolution.card.creature))) ?? [];
@@ -591,8 +538,8 @@ function Table({ state, command, busy, muted, reduced, guided, time }: { state: 
 		const promptKey = `${game.challenge.id}:${game.challenge.claims.length}:${me.id}`;
 		if (responsePromptSeen.current === promptKey) { return; }
 		responsePromptSeen.current = promptKey;
-		if (!muted) { void playNormalizedAudio(RESPONSE_PROMPT_VARIANT, 0.6).catch(function () { return; }); }
-	}, [choosingResponse, game.challenge?.id, game.challenge?.claims.length, me?.id, muted]);
+		playSound(RESPONSE_PROMPT_VARIANT, 0.6, soundLevelRef.current);
+	}, [choosingResponse, game.challenge?.id, game.challenge?.claims.length, me?.id]);
 	const tutorial = guided && me?.id === required ? game.phase === "initiation" ? "start" : game.phase === "response" || game.phase === "passing" ? "response" : null : null;
 	const showTutorial = tutorial !== null && !dismissedTutorials.has(tutorial);
 	function dismissTutorial(): void {

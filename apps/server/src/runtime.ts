@@ -119,6 +119,11 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 		}
 		rooms.delete(room.id); store.delete(room.id);
 	}
+	function dismiss(personId: string, socket: Socket): void {
+		connections.delete(personId);
+		socket.emit("lobby-closed");
+		socket.disconnect();
+	}
 	function publicView(room: Room, me: string): RoomView {
 		return { id: room.id, revision: room.revision, me, hostId: room.hostId,
 			members: room.members.map(m => ({ id: m.id, name: m.name, online: memberOnline(room, m.id), seated: room.seated.includes(m.id), ready: room.ready.includes(m.id), computer: m.computer, icon: m.icon })),
@@ -398,7 +403,7 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				const command = parsed.data;
 				const original = rooms.get(identity.roomId)!;
 				if (store.hasReceipt(original.id, identity.personId, command.id)) { acknowledge({ ok: true }); socket.emit("state", publicView(original, identity.personId)); return; }
-				if (original.revision !== command.revision && command.action.kind !== "close-lobby") { socket.emit("state", publicView(original, identity.personId)); throw new GameError("Tilanne muuttui. Tarkista valinta ja yritä uudelleen."); }
+				if (original.revision !== command.revision && command.action.kind !== "close-lobby" && command.action.kind !== "leave-table") { socket.emit("state", publicView(original, identity.personId)); throw new GameError("Tilanne muuttui. Tarkista valinta ja yritä uudelleen."); }
 				const room = structuredClone(original);
 				mutate(room, identity.personId, command);
 				updatePrompt(room, promptKey(original.game)); rememberEnd(room);
@@ -408,9 +413,11 @@ export async function createRuntime(path: string, options: { countdownMs?: numbe
 				if (destroyed) {
 					acknowledge({ ok: true });
 					deleteRoom(room);
+					if (command.action.kind === "leave-table") { dismiss(identity.personId, socket); }
 					return;
 				}
 				acknowledge({ ok: true }); broadcast(room); scheduleComputerTurn(room);
+				if (command.action.kind === "leave-table") { dismiss(identity.personId, socket); }
 			}
 			catch (error) { replyError(error, acknowledge); }
 		});

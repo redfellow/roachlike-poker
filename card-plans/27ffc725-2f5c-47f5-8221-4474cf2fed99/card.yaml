@@ -1,0 +1,17 @@
+format: 1
+slug: reliable-leave-board-action-that-works-e
+title: Reliable leave-board action that works every time
+x-harvaaja-card: 27ffc725-2f5c-47f5-8221-4474cf2fed99
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: no-spec-change
+  rationale: The rooms spec already requires leaving the lobby. The server's
+    stale-revision rejection and the missing disconnect break that requirement;
+    fixing them changes no contract.
+  citations:
+    - openspec/specs/rooms/spec.md:37
+    - apps/server/src/runtime.ts:206
+    - apps/server/src/runtime.ts:379
+  revision: e01ce237-0691-4efe-93b0-b7d778bc882f
