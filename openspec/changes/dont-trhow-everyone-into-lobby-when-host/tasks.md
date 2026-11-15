@@ -12,5 +12,14 @@
   - proof: `npx eslint apps/web/src/strings.fi.ts tests/e2e/game.spec.ts tests/e2e/computers.spec.ts`
   - proof: `npm run typecheck`
 
+## 3. Return to lobby
+- [ ] 3.1 Add the `lobby` command to `packages/protocol/src/index.ts` and a host-only, ended-only `lobby` branch in `apps/server/src/runtime.ts` restoring the old lobby reset; add runtime tests named after the scenarios "Host returns the room to a lobby" and "Rematch keeps computers ready" (computers ready, humans not), "Group changes in the returned lobby" (newcomer sits, host removes a seat) and "Only the host returns to a lobby after the end" (table-driven rejections)
+  - proof: `npx vitest run apps/server/src/runtime.test.ts`
+  - proof: `npx eslint packages/protocol/src/index.ts apps/server/src/runtime.ts apps/server/src/runtime.test.ts`
+- [ ] 3.2 Add `FI.table.backToLobby` = `Takaisin aulaan` in `apps/web/src/strings.fi.ts` and a host button sending `{ kind: "lobby" }` in the end panel of `apps/web/src/main.tsx`
+  - proof: `npx eslint apps/web/src/strings.fi.ts apps/web/src/main.tsx`
+  - proof: `npm run typecheck`
+
 ## Manual checks after merge (The user)
 - With two browsers, finish a match, press `Uusi peli samalla porukalla` as host and confirm both go straight into a new deal.
+- Finish a match, press `Takaisin aulaan` as host, and confirm everyone lands in the lobby, a newcomer can sit and an absent seat can be removed before starting.

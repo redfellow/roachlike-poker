@@ -1,11 +1,15 @@
 ## MODIFIED Requirements
 
 ### Requirement: Computer readiness is automatic
-Seated computers SHALL always count as ready and online. A match SHALL start when two or more people are seated and every seated person is ready, whether the seated people are humans, computers or both; the host does not need a seat. A rematch SHALL deal seated computers into the next match together with the seated humans.
+Seated computers SHALL always count as ready and online. A match SHALL start when two or more people are seated and every seated person is ready, whether the seated people are humans, computers or both; the host does not need a seat. A rematch SHALL deal seated computers into the next match together with the seated humans. Returning the room to a lobby after a match SHALL keep seated computers ready.
 
 #### Scenario: Rematch deals computers in
 - **WHEN** the host starts a rematch after a match ends
 - **THEN** every seated computer has a seat in the new match
+
+#### Scenario: Rematch keeps computers ready
+- **WHEN** the host returns the room to a lobby after a match ends
+- **THEN** every seated computer is ready
 
 #### Scenario: Computers alone start a match
 - **WHEN** two or more computers are seated and every seated person is ready
