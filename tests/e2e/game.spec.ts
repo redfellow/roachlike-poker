@@ -160,8 +160,9 @@ test("private room, full game, recap, rematch, hidden hands and reload", async f
 		await expect(pages[0]!.getByText("Se oli siinä.", { exact: true })).toBeVisible();
 		await expect(pages[0]!.getByText("ILLAN EPÄONNISTUJA")).toBeVisible();
 		await expect(pages[0]!.locator(".history tbody tr")).toHaveCount(2);
-		await pages[0]!.getByRole("button", { name: "Uusi peli — sama kutsulinkki" }).click();
-		await expect(pages[1]!.getByText("Pöytä on katettu.")).toBeVisible();
+		await pages[0]!.getByRole("button", { name: "Uusi peli samalla porukalla" }).click();
+		await expect(pages[1]!.getByText("Kortit jaettu. Älä luota kehenkään.")).toBeVisible();
+		await expect(pages[1]!.locator(".hand-card").first()).toBeVisible();
 		// History after a finished match: the topbar button shows count 1 without opening another menu.
 		const historyButton = pages[0]!.locator(".topbar").getByRole("button", { name: /Historia\s*1/ });
 		await expect(historyButton).toBeVisible();

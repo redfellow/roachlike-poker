@@ -81,8 +81,9 @@ for (const seatCount of [2, 3, 6]) {
 		await expect(page.getByText("ILLAN EPÄONNISTUJA")).toBeVisible();
 		await expect(page.locator(".history tbody tr")).toHaveCount(seatCount);
 		if (seatCount === 3) {
-			await page.getByRole("button", { name: "Uusi peli — sama kutsulinkki" }).click();
-			await expect(page.locator(".lobby-player--ready")).toHaveCount(2);
+			await page.getByRole("button", { name: "Uusi peli samalla porukalla" }).click();
+			await expect(page.locator(".seat")).toHaveCount(seatCount);
+			await expect(page.locator(".hand-card").first()).toBeVisible();
 		}
 		await closeSoloTable(page);
 	});

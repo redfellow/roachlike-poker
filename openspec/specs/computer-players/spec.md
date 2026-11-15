@@ -24,10 +24,14 @@ Each computer SHALL get a name chosen at random from the unused names in a fixed
 - **THEN** its name is a `🤖` name that no other member of the room has
 
 ### Requirement: Computer readiness is automatic
-Seated computers SHALL always count as ready and online. A match SHALL start when two or more people are seated and every seated person is ready, whether the seated people are humans, computers or both; the host does not need a seat. When the host opens a rematch, the seated computers SHALL be ready and the humans SHALL not be.
+Seated computers SHALL always count as ready and online. A match SHALL start when two or more people are seated and every seated person is ready, whether the seated people are humans, computers or both; the host does not need a seat. A rematch SHALL deal seated computers into the next match together with the seated humans. Returning the room to a lobby after a match SHALL keep seated computers ready.
+
+#### Scenario: Rematch deals computers in
+- **WHEN** the host starts a rematch after a match ends
+- **THEN** every seated computer has a seat in the new match
 
 #### Scenario: Rematch keeps computers ready
-- **WHEN** the host opens a rematch after a match ends
+- **WHEN** the host returns the room to a lobby after a match ends
 - **THEN** every seated computer is ready
 
 #### Scenario: Computers alone start a match
