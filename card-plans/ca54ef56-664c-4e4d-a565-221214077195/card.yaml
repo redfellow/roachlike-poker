@@ -1,0 +1,16 @@
+format: 1
+slug: add-a-page-description-for-link-previews
+title: Add a page description for link previews
+x-harvaaja-card: ca54ef56-664c-4e4d-a565-221214077195
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: no-spec-change
+  rationale: Static HTML meta tag for crawlers/link previews; no in-app observable
+    contract in visual-presentation spec, which covers interface/layout/themes
+    only.
+  citations:
+    - apps/web/index.html
+    - openspec/specs/visual-presentation/spec.md
+  revision: 87ded232-9223-4c06-8f99-62197b9765a5
